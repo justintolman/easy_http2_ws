@@ -1,6 +1,7 @@
 import http from 'http';
 
 export class Hello {
+	//
 	constructor(){
 		this._target = 'Node World';
 	}
