@@ -1,6 +1,6 @@
 {
   "name": "nodefast_ws_www",
-  "version": "0.0.1",
+  "version": "0.0.01",
   "type": "module",
   "description": "Nodejs Fastify http2 asnd web socket server setup.",
   "main": "index.js",
