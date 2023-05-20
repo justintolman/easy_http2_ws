@@ -25,12 +25,11 @@ export class WebServer {
 	constructor(){const __filename = fileURLToPath(import.meta.url);
 		const __dirname = path.dirname(__filename);
 		this._ready = false;
-		this._server = this.buildServer();
 	}
 
 	// Start server and log any errors
-	async sthatServer(config){
-		cfg{
+	async startServer(config){
+		cfg = {
 			svr: {
 				port: 80,
 				s_port: 443,
