@@ -24,7 +24,7 @@ export class SocketServer {
 		let hist = this._chatHistories = {};
 
 		let server = svr||new WebServer(config)
-	});
+	}
 
 		server.register(websocket);
 		server.get('/', { websocket: true }, (ctn, res) => {//WebSocket requests
