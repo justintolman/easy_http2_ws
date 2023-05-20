@@ -9,6 +9,16 @@ import path from 'path';
 import {fileURLToPath} from 'url';
 
 /*
+ * An easy http/2 server with automatic http/2 push.
+ *
+ * Efficiently serves small files like web components so you don't need to serve a monolighic bundle.
+ * 
+ * All configuration is done in config.js, and is deployable with minimal configuration
+ * 
+ * I plan to have it serve a generated sitemap and robots.txt as well.
+ */
+
+/*
  * TODO: Add maintenance mode
  */
 export class WebServer {
@@ -17,26 +27,32 @@ export class WebServer {
 		this._ready = false;
 		this._server = this.buildServer();
 	}
-	
+
 	// Start server and log any errors
-	async buildServer(ssl_key, ssl_cert, logging=false, port=80, s_port=443, root='public'){
-		this._PORT = ServerConfig.port;
-		let ROOT;
+	async sthatServer(config){
+		cfg{
+			svr: {
+				port: 80,
+				s_port: 443,
+				root: 'public'
+			}
+		}
+		Object.assign(cfg, config);
 
 		ROOT = 'public';
 		/*
 		 * Read in the SSL certs
 		 */
 		SSL{
-			key: fs.readFileSync(this.convertPath(ssl_key));
-			cert: fs.readFileSync(this.convertPath(ssl_cert));
+			key: fs.readFileSync(this.convertPath(cfg.ssl.key));
+			cert: fs.readFileSync(this.convertPath(cfg.ssl.cert));
 		}
 
 		/*
 		 * Set up http/2 server
 		 */
 		let server = fastify({
-				logger: logging?{prettyPrint: { colorize: true, translateTime: true }}:false,
+			logger: cfg.svr.logging?{prettyPrint: { colorize: true, translateTime: true }}:false,
 			http2: true,
 			https: {
 				allowHTTP1: true,
@@ -50,13 +66,13 @@ export class WebServer {
 		 *
 		 * May need additional dialing in depending on server setup.
 		 */
-		server.register(redirect, { httpsPort: s_port });
+		server.register(redirect, { httpsPort: cfg.svr.s_port });
 
 		// Dynamically apply file compression based on browser capabilities.
 		server.register(compress);
 
 		//Set CORS settings
-		server.register(cors, { origin: '*' });
+		server.register(cors, { origin: cfg.cors || '*'  });
 
 		/*
 		 * Automatically determine which files to push with http/2
@@ -66,9 +82,14 @@ export class WebServer {
 		 * replace within the fastify-auto-push module in node_modules fixes it.
 		 */
 		server.register(staticServe, {
-			root: path.join(__dirname, '..', ROOT)
+			root: path.join(__dirname, '..', cfg.svr.root)
 		});
-
+		/*
+		 * TODO: Write code to handle additional routes.
+		 */
+		/*
+		 * TODO: Autogenerate sitemap and robots.txt from config
+		 */
 		this._ready = true;
 		return server;
 	}

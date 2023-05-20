@@ -1,14 +1,4 @@
-import http from 'http';
+import {WebServer} from './src/http2';
+import {SocketServer} from './src/socket';
 
-export class Hello {
-	//
-	constructor(){
-		this._target = 'Node World';
-	}
-	start(){
-		http.createServer(function (req, res) {
-			res.writeHead(200, {'Content-Type': 'text/html'});
-			res.end(`Hello ${this._target}!`);
-			}).listen(80);
-	}
-}
+export (WebServer, SocketServer);
