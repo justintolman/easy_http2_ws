@@ -1,6 +1,7 @@
 {
   "name": "nodefast_ws_www",
   "version": "0.0.1",
+  "type": "module",
   "description": "Nodejs Fastify http2 asnd web socket server setup.",
   "main": "index.js",
   "repository": "https://github.com/justintolman/nodefast_ws_www.git",
