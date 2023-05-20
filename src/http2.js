@@ -42,7 +42,7 @@ export class WebServer {
 		/*
 		 * Read in the SSL certs
 		 */
-		SSL{
+		SSL = {
 			key: fs.readFileSync(this.convertPath(cfg.ssl.key));
 			cert: fs.readFileSync(this.convertPath(cfg.ssl.cert));
 		}
