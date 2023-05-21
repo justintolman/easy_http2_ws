@@ -1,4 +1,4 @@
-import fastify from '@fastify';
+import fastify from 'fastify';
 import { staticServe } from 'fastify-auto-push';
 import redirect from 'fastify-https-redirect';
 import compress from '@fastify/compress';
