@@ -1,29 +1,29 @@
-import fastify from 'fastify';
-import websocket from 'fastify-websocket';
-import cors from 'fastify-cors';
-import fs from 'fs';
-import { randomUUID } from 'crypto';
+// import fastify from 'fastify';
+// import websocket from 'fastify-websocket';
+// import cors from 'fastify-cors';
+// import fs from 'fs';
+// import { randomUUID } from 'crypto';
 
-import { WebServer } from './http2.js';
-const ComponentServer = new WebServer();
+// import { WebServer } from './http2.js';
+// const ComponentServer = new WebServer();
 
-/*
- * A WebSocket implementation that sllows client side requests from allowed domains
- * to establish a new channel or join an existing one. In this implementation channel
- * history is cleared when the last client leaves the channel.
- */
-export class SocketServer {
-	constructor(svr, config){
-		// Creating a new websocket server
-		this._clients = {};
-		this._channels = {};
+// /*
+//  * A WebSocket implementation that sllows client side requests from allowed domains
+//  * to establish a new channel or join an existing one. In this implementation channel
+//  * history is cleared when the last client leaves the channel.
+//  */
+// export class SocketServer {
+// 	constructor(svr, config){
+// 		// Creating a new websocket server
+// 		this._clients = {};
+// 		this._channels = {};
 
-		this._connections = {};
+// 		this._connections = {};
 
-		let hist = this._chatHistories = {};
+// 		let hist = this._chatHistories = {};
 
-		let server = svr||new WebServer(config)
-	}
+// 		let server = svr||new WebServer(config)
+// 	}
 
 	// 	server.register(websocket);
 	// 	server.get('/', { websocket: true }, (ctn, res) => {//WebSocket requests
