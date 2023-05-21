@@ -71,7 +71,7 @@ export class WebServer {
 		server.register(compress);
 
 		//Set CORS settings
-		server.register(cors, { origin: cfg.cors || '*'  });
+		if(cfg.svr.cors) server.register(cors, { origin: cfg.svr.cors  });yarn
 
 		/*
 		 * Automatically determine which files to push with http/2

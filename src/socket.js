@@ -2,10 +2,9 @@ import fastify from 'fastify';
 import websocket from 'fastify-websocket';
 import cors from 'fastify-cors';
 import fs from 'fs';
-import { ServerConfig, RTConfig } from '../config.mjs';
 import { randomUUID } from 'crypto';
 
-import { WebServer } from './WebServer.mjs';
+import { WebServer } from './http2.js';
 const ComponentServer = new WebServer();
 
 /*
