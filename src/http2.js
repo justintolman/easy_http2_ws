@@ -29,7 +29,7 @@ export class WebServer {
 
 	// Start server and log any errors
 	async buildServer(config){
-		cfg = {
+		let cfg = {
 			svr: {
 				port: 80,
 				s_port: 443,
