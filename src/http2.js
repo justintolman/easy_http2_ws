@@ -91,5 +91,9 @@ export class WebServer {
 		return server;
 	}
 
+	// Convert path delimiters as appropriate for the operating system;
+	convertPath(pathStr){
+		return path.join(pathStr.split(['/','\\']).join());
+	}
 }
 
