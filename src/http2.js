@@ -37,8 +37,6 @@ export class WebServer {
 			}
 		}
 		Object.assign(cfg, config);
-
-		ROOT = 'public';
 		/*
 		 * Read in the SSL certs
 		 */
