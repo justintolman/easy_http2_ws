@@ -28,7 +28,7 @@ export class WebServer {
 	}
 
 	// Start server and log any errors
-	async startServer(config){
+	async buildServer(config){
 		cfg = {
 			svr: {
 				port: 80,
