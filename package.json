@@ -9,11 +9,10 @@
   "license": "MIT",
   "private": true,
   "dependencies": {
-    "fastify": "^4.17.0",
+    "@fastify/compress": "^6.3.0",
+    "@fastify/cors": "^8.2.1",
+    "@fastify/websocket": "^8.1.0",
     "fastify-auto-push": "^0.2.0",
-    "fastify-compress": "^4.1.0",
-    "fastify-cors": "^6.1.0",
-    "fastify-https-redirect": "^1.0.4",
-    "fastify-websocket": "^4.3.0"
+    "fastify-https-redirect": "^1.0.4"
   }
 }
