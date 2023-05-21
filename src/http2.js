@@ -3,7 +3,7 @@ import { staticServe } from 'fastify-auto-push';
 import redirect from 'fastify-https-redirect';
 import compress from 'fastify-compress';
 import cors from 'fastify-cors';
-import fastifyStatic from 'fastify-static';
+// import fastifyStatic from 'fastify-static';
 import fs from 'fs';
 import path from 'path';
 import {fileURLToPath} from 'url';
