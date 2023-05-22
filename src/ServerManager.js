@@ -216,7 +216,7 @@ export class ServerManager {
 				console.error('HTTP to HTTPS redirece server failed:',err);
 				process.exit(1);
 			}
-		}
+		});
 	}
 
 	// Generate sitemap, robots.txt and a reusable navigation menu
