@@ -76,84 +76,84 @@ export class ServerManager {
 	}
 
 	// Start server and log any errors
-	async old buildServer(config) {
-		let cfg = {
-			svr: {
-				port: 80,
-				s_port: 443,
-				root: 'public'
-			}
-		}
-		Object.assign(cfg, config);
-		/*
-		 * Read in the SSL certs
-		 */
-		SSL = {
-			key: fs.readFileSync(this.convertPath(cfg.ssl.key)),
-			cert: fs.readFileSync(this.convertPath(cfg.ssl.cert))
-		}
+	// async old buildServer(config) {
+	// 	let cfg = {
+	// 		svr: {
+	// 			port: 80,
+	// 			s_port: 443,
+	// 			root: 'public'
+	// 		}
+	// 	}
+	// 	Object.assign(cfg, config);
+	// 	/*
+	// 	 * Read in the SSL certs
+	// 	 */
+	// 	SSL = {
+	// 		key: fs.readFileSync(this.convertPath(cfg.ssl.key)),
+	// 		cert: fs.readFileSync(this.convertPath(cfg.ssl.cert))
+	// 	}
 
-		/*
-		 * Set up http/2 server
-		 */
-		let server = fastify({
-			logger: cfg.svr.logging?{prettyPrint: { colorize: true, translateTime: true }}:false,
-			http2: true,
-			https: {
-				allowHTTP1: true,
-				key: SSL.key,
-				cert: SSL.cert
-			}
-		});
+	// 	/*
+	// 	 * Set up http/2 server
+	// 	 */
+	// 	let server = fastify({
+	// 		logger: cfg.svr.logging?{prettyPrint: { colorize: true, translateTime: true }}:false,
+	// 		http2: true,
+	// 		https: {
+	// 			allowHTTP1: true,
+	// 			key: SSL.key,
+	// 			cert: SSL.cert
+	// 		}
+	// 	});
 
-		/*
-		 * Redirect insecure reuests to secure connection.
-		 *
-		 * May need additional dialing in depending on server setup.
-		 */
-		server.register(redirect, { httpsPort: cfg.svr.s_port });
+	// 	/*
+	// 	 * Redirect insecure reuests to secure connection.
+	// 	 *
+	// 	 * May need additional dialing in depending on server setup.
+	// 	 */
+	// 	server.register(redirect, { httpsPort: cfg.svr.s_port });
 
-		// Dynamically apply file compression based on browser capabilities.
-		server.register(compress);
+	// 	// Dynamically apply file compression based on browser capabilities.
+	// 	server.register(compress);
 
-		//Set CORS settings
-		if(cfg.svr.cors) {
-			const cors = await import('cors');
+	// 	//Set CORS settings
+	// 	if(cfg.svr.cors) {
+	// 		const cors = await import('cors');
 
-			app.use(cors({
-				origin: cfg.svr.cors,
-			}));
-		}
+	// 		app.use(cors({
+	// 			origin: cfg.svr.cors,
+	// 		}));
+	// 	}
 
 		
-		if (process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'test' && !isSecure(req)) {
-			res.redirect(301, `https://${req.headers.host}${req.url}`);
-		  } else {
+	// 	if (process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'test' && !isSecure(req)) {
+	// 		res.redirect(301, `https://${req.headers.host}${req.url}`);
+	// 	  } else {
 
-		/*
-		 * Automatically determine which files to push with http/2
-		 * currently fastify-auto-push is throwing a deprication warning for using
-		 * reply.res instead of reply.raw. and request.req instead of request.raw.
-		 * You should be able to ignore or supress these warnings, but a search and
-		 * replace within the fastify-auto-push module in node_modules fixes it.
-		 */
-		server.register(staticServe, {
-			root: path.join(__dirname, '..', cfg.svr.root)
-		});
+	// 	/*
+	// 	 * Automatically determine which files to push with http/2
+	// 	 * currently fastify-auto-push is throwing a deprication warning for using
+	// 	 * reply.res instead of reply.raw. and request.req instead of request.raw.
+	// 	 * You should be able to ignore or supress these warnings, but a search and
+	// 	 * replace within the fastify-auto-push module in node_modules fixes it.
+	// 	 */
+	// 	server.register(staticServe, {
+	// 		root: path.join(__dirname, '..', cfg.svr.root)
+	// 	});
 
-		// Add websocket server if specified
-		if(cfg.ws) {
-			Const ws = await import('ws');
-		}
-		/*
-		 * TODO: Write code to handle additional routes.
-		 */
-		/*
-		 * TODO: Autogenerate sitemap and robots.txt from config
-		 */
-		this._ready = true;
-		return server;
-	}
+	// 	// Add websocket server if specified
+	// 	if(cfg.ws) {
+	// 		Const ws = await import('ws');
+	// 	}
+	// 	/*
+	// 	 * TODO: Write code to handle additional routes.
+	// 	 */
+	// 	/*
+	// 	 * TODO: Autogenerate sitemap and robots.txt from config
+	// 	 */
+	// 	this._ready = true;
+	// 	return server;
+	// }
 
 	/*
 	 * Add a static route with automatic http/2 push
