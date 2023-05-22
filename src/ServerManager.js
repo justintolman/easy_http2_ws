@@ -185,7 +185,7 @@ export class ServerManager {
 		}, this._app);
 		server.listen(svr_cfg.port || 443, (err, address)=>{
 			if(err) {
-				console.error('HTTP2 server failed': err);
+				console.error('HTTP2 server failed:', err);
 				process.exit(1);
 			}
 		}
@@ -213,7 +213,7 @@ export class ServerManager {
 		});
 		redirect_server.listen(port, (err, address)=>{
 			if(err) {
-				console.error('HTTP to HTTPS redirece server failed.',err);
+				console.error('HTTP to HTTPS redirece server failed:',err);
 				process.exit(1);
 			}
 		}
