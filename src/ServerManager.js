@@ -196,13 +196,13 @@ export class ServerManager {
 	 * Run a websocket server
 	 */
 	async startWS() {
-		let wss = new ws.Server({this._server});
-		wss.on('connection', (ws, req)=>{
-			ws.on('message', (msg)=>{
-				console.log(msg);
-			});
-			ws.send('something');
-		});
+		// let wss = new ws.Server({this._server});
+		// wss.on('connection', (ws, req)=>{
+		// 	ws.on('message', (msg)=>{
+		// 		console.log(msg);
+		// 	});
+		// 	ws.send('something');
+		// });
 	}
 
 	// Run server to redirect http to https
