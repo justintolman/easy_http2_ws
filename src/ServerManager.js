@@ -41,6 +41,7 @@ export class ServerManager {
 		}
 		// Override defaults with config
 		Object.assign(this._cfg, config);
+		console.log(this._cfg);
 		this._app = http2Express(express);
 		let cfg = this._cfg;
 		// Set up static routing
@@ -173,17 +174,18 @@ export class ServerManager {
 	 */
 	async addStaticRoute(path='public', route='/', staticOptions, assetCacheConfig) {
 		/* TODO: Add code to handly secured directories */
-		app.use(route, autopush(path, staticOptions, assetCacheConfig));
+		this._app.use(route, autopush(path, staticOptions, assetCacheConfig));
 
 	}
 	// Start an http/2 server
 	async startServer() {
+		console.log(this._cfg);
 		let server = http2.createSecureServer({
-			key: readFileSync(this._cfg.ssl.key),
-			cert: readFileSync(this._cfg.ssl.cert),
+			key: fs.readFileSync(this._cfg.ssl.key),
+			cert: fs.readFileSync(this._cfg.ssl.cert),
 			allowHTTP1: true
 		}, this._app);
-		server.listen(svr_cfg.port || 443, (err, address)=>{
+		server.listen(this._cfg.port || 443, (err, address)=>{
 			if(err) {
 				console.error('HTTP2 server failed:', err);
 				process.exit(1);

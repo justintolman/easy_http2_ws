@@ -105,3 +105,8 @@ dist
 
 # Package Lock
 package-lock.json
+
+# manual testing files
+config.js
+server.js
+/certs
