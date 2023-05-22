@@ -171,7 +171,7 @@ export class ServerManager {
 	 * 	Optional: It's unlikely that you'll need to use this, but the details are here:
 	 * 	https://www.npmjs.com/package/h2-auto-push
 	 */
-	async addStaticRoute(path='public', route='/' staticOptions, assetCacheConfig) {
+	async addStaticRoute(path='public', route='/', staticOptions, assetCacheConfig) {
 		/* TODO: Add code to handly secured directories */
 		app.use(route, autopush(path, staticOptions, assetCacheConfig));
 
