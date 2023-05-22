@@ -188,7 +188,7 @@ export class ServerManager {
 				console.error('HTTP2 server failed:', err);
 				process.exit(1);
 			}
-		}
+		});
 		return server;
 	}
 
