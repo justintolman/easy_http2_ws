@@ -23,6 +23,7 @@ An easy http/2 server with automatic http/2 push intended for quick deployment o
 * Further customization with .app
 
 #### Unfinished
+* CORS
 * WebSockets
 * Automatic Sitemap Generation
 * Automatic robots.txt Generation
