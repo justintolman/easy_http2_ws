@@ -1,10 +1,10 @@
 {
-  "name": "nodefast_ws_www",
+  "name": "easy_http2_ws",
   "version": "0.1.0",
   "type": "module",
   "description": "Nodejs Fastify http2 asnd web socket server setup.",
   "main": "index.js",
-  "repository": "https://github.com/justintolman/nodefast_ws_www.git",
+  "repository": "https://github.com/justintolman/easy_http2_www.git",
   "author": "Justin Tolman",
   "license": "MIT",
   "private": true,
