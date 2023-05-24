@@ -15,7 +15,8 @@ export default {
 	nav_menu: false,
 	root: 'root_file_path',
 	routes: [
-		{ path: '/some_file_path', route: '/route', options: { index: 'something.html' } }
-		{ path: '/some_file_path', route: '/route', options: { index: 'index.html' } }
+		{ path: '/some_file_path', route: '/route' },
+		{ path: '/other_file_path', route: '/other_route', options: { index: 'something.html' } },
+		{ path: '/deep_file_path/folder', route: '/third_route', options: { index: 'something.html' } }
 	]
 }

@@ -6,6 +6,9 @@ import autopush from 'http2-express-autopush';
 import path from 'path';
 import {fileURLToPath} from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 /*
  * An easy http/2 server with automatic http/2 push.
  * Intended for quick deployment of small sites with minimal setup.
@@ -13,7 +16,7 @@ import {fileURLToPath} from 'url';
  *
  * Efficiently serves small files like web components so you don't need to serve a monolighic bundle.
  * 
- * The only mandatory configuration is the inclustion of SSL certs. in the formt
+ * The only mandatory configuration is the inclustion of SSL certs. in the format
  * {ssl{cert:'<path>.fullchain.pem',key:'<path>.privkey.pem'}}
  * All configuration can be done in the config.js file.
  * The server will default to serving only static files from the public folder on port 443.
@@ -41,21 +44,10 @@ export class ServerManager {
 		}
 		// Override defaults with config
 		Object.assign(this._cfg, config);
-		console.log(this._cfg);
 		this._app = http2Express(express);
 		let cfg = this._cfg;
 		// Set up static routing
-		switch(cfg) {
-			case cfg.hasOwnProperty('root'):
-				this.addStaticRoute(cfg.root);
-			case (cfg.routes?.length > 0):
-				cfg.routes?.forEach((r) => {
-					this.addStaticRoute(r.path, r.route, r.options, r.push_config);
-				});
-				break;
-			default:
-				this.addStaticRoute();
-		}
+		this.mapRoutes();
 
 		// Start server
 		this._server = this.startServer();
@@ -156,6 +148,18 @@ export class ServerManager {
 	// 	return server;
 	// }
 
+	// Set up routing based on config
+	mapRoutes() {
+		let cfg = this._cfg;
+		if(cfg.routes.find(r => r.path === '/') === undefined && cfg.root === undefined) this.addStaticRoute();
+		if(cfg.hasOwnProperty('root')) this.addStaticRoute(cfg.root);
+		if(cfg.routes?.length > 0){
+			cfg.routes?.forEach((r) => {
+				this.addStaticRoute(r.path, r.route, r.options, r.push_config);
+			});
+		}
+	}
+
 	/*
 	 * Add a static route with automatic http/2 push
 	 *
@@ -172,14 +176,12 @@ export class ServerManager {
 	 * 	Optional: It's unlikely that you'll need to use this, but the details are here:
 	 * 	https://www.npmjs.com/package/h2-auto-push
 	 */
-	async addStaticRoute(path='public', route='/', staticOptions, assetCacheConfig) {
+	addStaticRoute(path='public', route='/', staticOptions, assetCacheConfig) {
 		/* TODO: Add code to handly secured directories */
-		this._app.use(route, autopush(path, staticOptions, assetCacheConfig));
-
+		this._app.use(route, autopush(this.convertPath(path), staticOptions, assetCacheConfig));
 	}
 	// Start an http/2 server
 	async startServer() {
-		console.log(this._cfg);
 		let server = http2.createSecureServer({
 			key: fs.readFileSync(this._cfg.ssl.key),
 			cert: fs.readFileSync(this._cfg.ssl.cert),

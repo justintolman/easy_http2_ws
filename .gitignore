@@ -109,4 +109,6 @@ package-lock.json
 # manual testing files
 config.js
 server.js
+/public
+/dev
 /certs
