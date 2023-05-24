@@ -31,7 +31,7 @@ An easy http/2 server with automatic http/2 push intended for quick deployment o
 ## Simple Usage
 Add easy_http_ws as a dependency for your project:
 
-npm add github.com/justintolman/easy_http2_ws --save
+npm add github.com/justintolman/easy_http2_ws
 
 npm install
 
