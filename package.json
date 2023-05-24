@@ -2,7 +2,7 @@
   "name": "easy_http2_ws",
   "version": "0.1.0",
   "type": "module",
-  "description": "Nodejs Fastify http2 asnd web socket server setup.",
+  "description": "An easy to deploy http2 and websocket server with minimal configuration.",
   "main": "index.js",
   "repository": "https://github.com/justintolman/easy_http2_www.git",
   "author": "Justin Tolman",
