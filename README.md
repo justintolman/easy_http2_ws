@@ -23,6 +23,7 @@ An easy http/2 server with automatic http/2 push intended for quick deployment o
 * Further customization with .app
 
 #### Unfinished
+* Default Error Responses (404 and such.)
 * CORS
 * WebSockets
 * Automatic Sitemap Generation
@@ -60,3 +61,76 @@ server.js
 Run the following with whatever kind of persistance (pm2, forever, systemd, etc.) you prefer for your server setup:
 
 node server.js
+
+## Advanced Usage
+
+### Change ports
+To change ports use "port" for the ssl port or "insecure_port" to replace 80.
+
+	{
+		...
+		port: 4433,
+		insecure_port: 8080,
+		...
+	}
+
+### Change the root directory
+There are two ways to change the root directory in config.js. The default root is a folder named "public".
+
+	{
+		...
+		root: "my_root_folder";
+		...
+	}
+
+or
+
+	{
+		...
+		routes: [
+			{ path: "my_root_folder", route:"/" }
+			...
+		]
+		...
+	}
+
+### Routing
+
+For custom routes use an array with the key "routes" in config.js.
+
+	{
+		...
+		routes: [
+			{ path: 'some_file_path', route: '/route' },
+			{ path: 'other_file_path', route: '/other_route', options: { index: 'something.html' } },
+			{ path: 'deep_file_path/folder', route: '/third_route', options: { index: 'something.html' } }
+		]
+		...
+	}
+
+### CORS
+
+Note: This isn't implemented yet, for use .app.use() if you need cors.
+
+### 
+
+	{
+		ssl: {
+			key: 'path/to/key.pem',
+			cert: 'path/certs/cert_auth.pem'
+		},
+		port: 443,
+		insecure_port: 80,
+		logging: false,
+		cors: false,
+		websocket: false,
+		sitemap: false,
+		robots: false,
+		nav_menu: false,
+		root: 'root_file_path',
+		routes: [
+			{ path: 'some_file_path', route: '/route' },
+			{ path: 'other_file_path', route: '/other_route', options: { index: 'something.html' } },
+			{ path: 'deep_file_path/folder', route: '/third_route', options: { index: 'something.html' } }
+		]
+	}

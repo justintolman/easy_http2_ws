@@ -230,10 +230,6 @@ export class ServerManager {
 		/* TODO: Generaterobots.txt and save to root directory */
 	}
 
-	/*
-	* TODO: Add maintenance mode
-	*/
-
 	// Convert path delimiters as appropriate for the operating system;
 	convertPath(pathStr) {
 		return path.join(pathStr.split(['/','\\']).join());
