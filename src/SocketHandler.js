@@ -28,7 +28,7 @@ export default class SocketHandler {
 
 	addRoom(name='default'){
 		if(!this._rooms.hasOwnProperty(name)) return;
-		this._rooms[name] = new Room(name));
+		this._rooms[name] = new Room(name);
 	}
 
 	removeRoom(room){
