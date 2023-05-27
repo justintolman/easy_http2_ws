@@ -81,7 +81,7 @@ class Room {
 		 */
 		if(msg.direct){
 			let recipient = this._clients.find(client=>client.id === direct);
-			if(recipient) recipient.hear({msg));
+			if(recipient) recipient.hear({msg});
 		} else {
 			this._clients.map(client => if(client.id !== msg.sender.id) client.hear({msg));
 			this._messages.push(msg);
