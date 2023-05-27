@@ -6,7 +6,8 @@
  */
 
 import crypto from "crypto";
-import {expressWS} from "express-ws";
+Const expressWS = require("express-ws");
+
 /*
  * This class handles all websocket connections
  * @param {express} app - The express app or router to add the websocket routes to.
