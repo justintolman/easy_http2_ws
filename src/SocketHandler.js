@@ -6,7 +6,7 @@
  */
 
 import crypto from "crypto";
-Const expressWS = require("express-ws");
+const expressWS = require("express-ws");
 
 /*
  * This class handles all websocket connections
