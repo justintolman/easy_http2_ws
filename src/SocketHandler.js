@@ -5,7 +5,7 @@
  * To clear up memory, messages should be deleted when the last client leaves the room.
  */
 
-import crypto frpm "crypto";
+import crypto from "crypto";
 import {expressWS} from "express-ws";
 /*
  * This class handles all websocket connections
