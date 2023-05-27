@@ -14,6 +14,7 @@ import * as expressWS from "express-ws";
  */
 export default class SocketHandler {
 	constructor(app, route='/ws'){
+		console.log(expressWS);
 		expressWS(this._app);
 		this._socket = app.ws
 		let sh = this;
