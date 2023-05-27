@@ -21,7 +21,7 @@ export default class SocketHandler {
 			// Create a new client
 			ws.id = crypto.randomUUID();
 			let client = new Client(ws, sh);
-			client.hear({type='registration', id:client.id});
+			client.hear({type:'registration', id:client.id});
 		});
 		this.rooms = {};
 	}
