@@ -5,6 +5,7 @@ import fs from 'fs';
 import autopush from 'http2-express-autopush';
 import path from 'path';
 import {fileURLToPath} from 'url';
+import http from 'http';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -54,7 +55,7 @@ export class ServerManager {
 
 		// Start
 		if(cfg.websocket) {
-			this._ws = this.startWS();
+			this._socket_handler = this.startWS();
 		}
 	}
 
@@ -151,7 +152,7 @@ export class ServerManager {
 	// Set up routing based on config
 	mapRoutes() {
 		let cfg = this._cfg;
-		if(cfg.routes.find(r => r.path === '/') === undefined && cfg.root === undefined) this.addStaticRoute();
+		if(cfg.routes?.find(r => r.path === '/') === undefined && cfg.root === undefined) this.addStaticRoute();
 		if(cfg.hasOwnProperty('root')) this.addStaticRoute(cfg.root);
 		if(cfg.routes?.length > 0){
 			cfg.routes?.forEach((r) => {
@@ -182,6 +183,8 @@ export class ServerManager {
 	}
 	// Start an http/2 server
 	async startServer() {
+		// redirect http to https
+		this.redirect();
 		let server = http2.createSecureServer({
 			key: fs.readFileSync(this._cfg.ssl.key),
 			cert: fs.readFileSync(this._cfg.ssl.cert),
@@ -199,28 +202,25 @@ export class ServerManager {
 	/*
 	 * Run a websocket server
 	 */
-	async startWS() {
-		// let wss = new ws.Server({this._server});
-		// wss.on('connection', (ws, req)=>{
-		// 	ws.on('message', (msg)=>{
-		// 		console.log(msg);
-		// 	});
-		// 	ws.send('something');
-		// });
+	async startWS(route='/ws') {
+		// let SH = await import('./SocketHandler.js');
+		// let SocketHandler = SH.default;
+		// return new SocketHandler(this._app, route);
 	}
 
 	// Run server to redirect http to https
-	async redirect(port=80) {
-		let redirect_server = https.createServer((req, res) => {
+	async redirect() {
+		/*
+		 * TODO: I'm sure there's a way to do this without importing http
+		 * But this is working, and http2 was resulting in a download
+		 * instead of a redirect.
+		 */
+		let port = this._cfg.insecure_port || 80;
+		let redirect_server = http.createServer((req, res) => {
 			res.writeHead(301,{Location: `https://${req.headers.host}${req.url}`});
 			res.end();
 		});
-		redirect_server.listen(port, (err, address)=>{
-			if(err) {
-				console.error('HTTP to HTTPS redirece server failed:',err);
-				process.exit(1);
-			}
-		});
+		redirect_server.listen(port);
 	}
 
 	// Generate sitemap, robots.txt and a reusable navigation menu
@@ -235,4 +235,3 @@ export class ServerManager {
 		return path.join(pathStr.split(['/','\\']).join());
 	}
 }
-
