@@ -204,7 +204,8 @@ export class ServerManager {
 	 */
 	async startWS(route='/ws') {
 		console.log('Starting websocket server');
-		let SocketHandler = await import('./SocketHandler.js');
+		let SH = await import('./SocketHandler.js');
+		let SocketHandler = SH.default;
 		console.log(SocketHandler);
 		return new SocketHandler(this._app, route);
 	}
