@@ -203,9 +203,9 @@ export class ServerManager {
 	 * Run a websocket server
 	 */
 	async startWS(route='/ws') {
-		let SH = await import('./SocketHandler.js');
-		let SocketHandler = SH.default;
-		return new SocketHandler(this._app, route);
+		// let SH = await import('./SocketHandler.js');
+		// let SocketHandler = SH.default;
+		// return new SocketHandler(this._app, route);
 	}
 
 	// Run server to redirect http to https
