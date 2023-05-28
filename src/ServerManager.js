@@ -55,7 +55,7 @@ export class ServerManager {
 
 		// Start
 		if(cfg.websocket) {
-			this._socket_handler = this.startWS();
+			this._ws_handler = this.startWS();
 		}
 	}
 
@@ -185,9 +185,11 @@ export class ServerManager {
 	async startServer() {
 		// redirect http to https
 		this.redirect();
+		this._cfg.ssl.key_data = fs.readFileSync(this.convertPath(this._cfg.ssl.key));
+		this._cfg.ssl.cert_data = fs.readFileSync(this.convertPath(this._cfg.ssl.cert));
 		let server = http2.createSecureServer({
-			key: fs.readFileSync(this._cfg.ssl.key),
-			cert: fs.readFileSync(this._cfg.ssl.cert),
+			key: this._cfg.ssl.key_data,
+			cert: this._cfg.ssl.cert_data,
 			allowHTTP1: true
 		}, this._app);
 		server.listen(this._cfg.port || 443, (err, address)=>{
@@ -202,10 +204,11 @@ export class ServerManager {
 	/*
 	 * Run a websocket server
 	 */
-	async startWS(route='/ws') {
-		// let SH = await import('./SocketHandler.js');
-		// let SocketHandler = SH.default;
-		// return new SocketHandler(this._app, route);
+	async startWS() {
+		let SH = await import('./SocketHandler.js');
+		let SocketHandler = SH.default;
+		let handler = new SocketHandler(this._cfg);
+		return handler;
 	}
 
 	// Run server to redirect http to https
@@ -235,3 +238,4 @@ export class ServerManager {
 		return path.join(pathStr.split(['/','\\']).join());
 	}
 }
+

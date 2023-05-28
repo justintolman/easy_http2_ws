@@ -6,20 +6,24 @@
  */
 
 import crypto from "crypto";
-import * as EWS from "express-ws";
-const expressWS = EWS.default;
+import { createServer } from 'https';
+import { WebSocketServer } from 'ws';
 /*
  * This class handles all websocket connections
  * @param {express} app - The express app or router to add the websocket routes to.
  * @param {string} route - The route to add the websocket routes to.
  */
 export default class SocketHandler {
-	constructor(app, route='/ws'){
-		console.log(expressWS);
-		expressWS(this._app);
-		this._socket = app.ws
+	constructor(config){
+		this.server = createServer({
+			cert: config.ssl.cert_data,
+			key: config.ssl.key_data
+		}).listen(config.websocket);
+		console.log(this.server);
+		this.wss = new WebSocketServer({ server: this.server });
 		let sh = this;
-		app.ws(route, (ws, req) => {
+		this.wss.on('connection', function connection(ws) {
+			console.log('connection');
 			// Create a new client
 			ws.id = crypto.randomUUID();
 			let client = new Client(ws, sh);
