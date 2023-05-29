@@ -16,38 +16,44 @@ import { WebSocketServer } from 'ws';
 export default class SocketHandler {
 	constructor(config){
 		this.server = createServer({
+			// The cert files were already read in the server manager.
 			cert: config.ssl.cert_data,
 			key: config.ssl.key_data
-		}).listen(config.websocket);
-		console.log(this.server);
+		}).listen(config.ws_port);
 		this.wss = new WebSocketServer({ server: this.server });
 		let sh = this;
 		this.wss.on('connection', function connection(ws) {
-			console.log('connection');
 			// Create a new client
+			/*
+			 * TODO: These ids are too long
+			 * make shorter ones
+			 */
 			ws.id = crypto.randomUUID();
 			let client = new Client(ws, sh);
-			client.hear({type:'registration', id:client.id});
+			client.hear({type:'registration', user_id:client.id, history: client.room.messages});
 		});
 		this.rooms = {};
 	}
 
-	addRoom(name='default'){
-		if(!this._rooms.hasOwnProperty(name)) return;
-		this._rooms[name] = new Room(name);
+	addRoom(name){
+		if(this.rooms.hasOwnProperty(name)) return;
+		this.rooms[name] = new Room(name);
 	}
 
 	removeRoom(room){
 		if(room.clientCount !== 0) return;
-		delete this._rooms[room.name];
+		delete this.rooms[room.name];
 	}
 
 	joinRoom(client, name='default'){
-		if(!this._rooms.hasOwnProperty(name)) this.addRoom(name);
-		this._rooms[name].addClient(client);
+		let n = name || 'default';
+		if(!this.rooms.hasOwnProperty(n)) this.addRoom(n);
+		this.rooms[n].addClient(client);
+		return this.rooms[n];
 	}
 
 	leaveRoom(client){
+		let room = client.room;
 		client.room.removeClient(client);
 		if(room.clientCount === 0) this.removeRoom(room);
 	}
@@ -70,14 +76,13 @@ class Room {
 
 	addClient(client){
 		this._clients.push(client);
-		client.send({history: this._messages});
 	}
 	
 	removeClient(client){
 		this._clients = this._clients.filter(c => c !== client);
 	}
 
-	get _messages(){
+	get messages(){
 		return this._messages;
 	}
 
@@ -92,6 +97,7 @@ class Room {
 			this._clients.map(client => {if(client.id !== msg.sender.id) client.hear(msg)});
 			this._messages.push(msg);
 		}
+		console.log(msg);
 	}
 
 }
@@ -101,10 +107,15 @@ class Client {
 		this._socket_handler = socket_handler;
 		this._ws = ws;
 		this._id = ws.id;
-		this._name = 'Anonymous';
+		this._name = '';
 		this.room = null;
-		ws.on('message', msg => {
+		ws.on('message', (msg, is_bin) => {
 			this.talk(msg);
+			/*
+			 * TODO: Add code to handle binary messages
+			 *
+			 * if(is_bin){
+			 */
 		});
 		ws.on('close', () => this._socket_handler.leaveRoom(this));
 		ws.on('join_room', room_name => this._socket_handler.joinRoom(this, room_name));
@@ -125,19 +136,34 @@ class Client {
 
 	set room(name){
 		if(this._room) this._room.removeClient(this);
-		this._room = room;
-
+		this._room = this._socket_handler.joinRoom(this, name);
 	}
 
 	talk(msg){
-		let m = msg
-		msg.sender = {id:this._id, name:this._name};
-		if(direct) msg.dm = direct;
-		this._room.message(m);
+		let str = msg.toString();
+		let m;
+		try{
+			m = JSON.parse(str);
+		} catch(e){
+			m = {msg: str};
+		}
+		if(m?.set_name){
+			this._name = m.set_name;
+			delete m.set_name;
+		}
+		if(m?.set_room){
+			this._socket_handler.joinRoom(this, m.set_room);
+			delete m.set_room;
+		}
+		if(Object.keys(m).length > 0){
+			m.sender = {id:this._id}
+			if(this._name) m.sender.name = this._name;
+			this._room.message(m);
+		};
 	}
 
 	hear(msg){
-		this._ws.send(msg);
+		this._ws.send(JSON.stringify(msg));
 	}
 
 }	
