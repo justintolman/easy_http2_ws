@@ -50,6 +50,9 @@ export class ServerManager {
 		Object.assign(this._cfg, config);
 		this._app = http2Express(express);
 		let cfg = this._cfg;
+		//Logging
+		this.app.log = l => {if(cfg.logging) console.log(l)};
+
 		// Set up static routing
 		this.mapRoutes();
 
@@ -65,23 +68,40 @@ export class ServerManager {
 	get app() {
 		return this._app;
 	}
+	/*
+	 * TODO: Add compression if not already done by http2-express-bridge
+	 */
+	// 	// Dynamically apply file compression based on browser capabilities.
+	// 	server.register(compress);
 
-	old_constructor() {
-		const __filename = fileURLToPath(import.meta.url);
-		const __dirname = path.dirname(__filename);
-		this._ready = false;
-	}
+	/*
+	 * TODO: Add CORS support.
+	 */
+	// 	//Set CORS settings
+	// 	if(cfg.svr.cors) {
+	// 		const cors = await import('cors');
+
+	// 		app.use(cors({
+	// 			origin: cfg.svr.cors,
+	// 		}));
+	// 	}
 
 	// Set up routing based on config
 	mapRoutes() {
+		this.app.log('Mapping routes');
 		let cfg = this._cfg;
-		if(cfg.routes?.find(r => r.path === '/') === undefined && cfg.root === undefined) this.addStaticRoute();
-		if(cfg.hasOwnProperty('root')) this.addStaticRoute(cfg.root);
 		if(cfg.routes?.length > 0){
 			cfg.routes?.forEach((r) => {
-				this.addStaticRoute(r.path, r.route, r.options, r.push_config);
+				//Handle private routes
+				if(r.private) this.addPrivateRoute(r.path, r.route, r.options);
+				//Handle public routes
+				else this.addStaticRoute(r.path, r.route, r.options, r.push_config);
 			});
 		}
+
+		//Set up default route
+		if(cfg.routes?.find(r => r.path === '/') === undefined && cfg.root === undefined) this.addStaticRoute();
+		if(cfg.hasOwnProperty('root')) this.addStaticRoute(cfg.root);
 	}
 
 	/*
@@ -101,27 +121,91 @@ export class ServerManager {
 	 * 	https://www.npmjs.com/package/h2-auto-push
 	 */
 	addStaticRoute(path='public', route='/', staticOptions, assetCacheConfig) {
-		/* TODO: Add code to handly secured directories */
-		this._app.use(route, autopush(this.convertPath(path), staticOptions, assetCacheConfig));
+		this.app.log(`Added static route: ${route} for path: ${path}`);
+		this.app.use(route, autopush(this.convertPath(path), staticOptions, assetCacheConfig));
 	}
+	
+	/*
+	 * Add a private route
+	 *
+	 * To use the default authentication, povide admin.user an admin.pwd in config.js
+	 * 
+	 * 	{
+	 * 		admin: {
+	 * 			usr: 'username',
+	 * 			pwd: 'password'
+	 * 		}
+	 * 	}
+	 * 
+	 * Warning: The default authentication is extremely rudamentary.
+	 * If you require more than the simplest authentication, provide any kind of sensative data,
+	 * or you need multiple authenticated users, create your own authentication module.
+	 * The path to the module should be provided under auth_module the config.js file,
+	 * and should provide a default export as the entry point.
+	 */ 
+	async addPrivateRoute(f_path, route, staticOptions, assetCacheConfig) {
+		this.app.log(`Adding private route: ${route} for path: ${path}`);
+		let params = {
+			app: this.app,
+			config: this._cfg,
+			route: route,
+			path: this.convertPath(f_path),
+			autopush: autopush,
+			staticOptions: staticOptions,
+			assetCacheConfig: assetCacheConfig
+		}
+		if(this._cfg.login_page) params.login_page = this.convertPath(this._cfg.login_page);
+		else params.login_page = path.join(__dirname, 'login.html');
+		// Use a custom authentication module if provided
+		let module = this._cfg.auth_module||'./AuthHandler.js';
+		// Make sure that the AuthHandler is only loaded once. 
+		let Auth;
+		if(this._authHandler){
+			Auth = this._authHandler;
+		} else {
+			this.app.log(`Loading authentication module: ${module}`);
+			let { default: tmp } = await import(module);
+			Auth = this._authHandler = tmp;
+		}
+		//attempts to run the provied module as a class. If it fails, it runs it as a function.
+		try {
+			new Auth(params);
+		} catch (error) {
+			console.log(error);
+			Auth(params);
+		}
+	}
+
 	// Start an http/2 server
 	async startServer() {
+		this.app.log('Starting HTTP2 server');
 		// redirect http to https
 		this.redirect();
-		this._cfg.ssl.key_data = fs.readFileSync(this.convertPath(this._cfg.ssl.key));
-		this._cfg.ssl.cert_data = fs.readFileSync(this.convertPath(this._cfg.ssl.cert));
-		let server = http2.createSecureServer({
-			key: this._cfg.ssl.key_data,
-			cert: this._cfg.ssl.cert_data,
-			allowHTTP1: true
-		}, this._app);
-		server.listen(this._cfg.port || 443, (err, address)=>{
-			if(err) {
-				console.error('HTTP2 server failed:', err);
-				process.exit(1);
-			}
-		});
-		return server;
+		// Load SSL certs
+		try {
+			this._cfg.ssl.key_data = fs.readFileSync(this.convertPath(this._cfg.ssl.key));
+			this._cfg.ssl.cert_data = fs.readFileSync(this.convertPath(this._cfg.ssl.cert));
+			let server = http2.createSecureServer({
+				key: this._cfg.ssl.key_data,
+				cert: this._cfg.ssl.cert_data,
+				allowHTTP1: true
+			}, this.app);
+			this.app.log('SSL certs files read successfully.');
+			this.app.log('  Note: This does not validate the certs, just that the files were read.');
+			let port = this._cfg.port || 443;
+			server.listen(port, (err)=>{
+				if(err) {
+					console.error('HTTP2 server failed:', err);
+					process.exit(1);
+				} else {
+					this.app.log(`HTTP2 server listening on port ${port}`);
+				}
+			});
+			return server;
+		} catch (error) {
+			console.error('Failed to read SSL certs:', error);
+			process.exit(1);
+		}
 	}
 
 	/*
@@ -145,10 +229,12 @@ export class ServerManager {
 		 * But this is working, and http2 was resulting in a download
 		 * instead of a redirect.
 		 */
+		this.app.log('Setting up http to https redirect.');
 		let port = this._cfg.insecure_port || 80;
 		let redirect_server = http.createServer((req, res) => {
 			res.writeHead(301,{Location: `https://${req.headers.host}${req.url}`});
 			res.end();
+			this.app.log(`Redirecting to HTTPS.`);
 		});
 		redirect_server.listen(port);
 	}
@@ -165,4 +251,3 @@ export class ServerManager {
 		return path.join(pathStr.split(['/','\\']).join());
 	}
 }
-
