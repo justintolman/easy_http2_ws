@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Login</title>
+	<style>
+		body {
+			position: absolute;
+			top: 0;
+			bottom: 0;
+			width: 100%;
+			display: grid;
+			justify-content: center;
+			align-items: center;
+			background: black;
+			overflow: hidden;
+		}
+		form {
+			width: 300px;
+			margin: 0 auto;
+			padding: 20px;
+			border: 1px solid #ccc;
+			background: #f3f3f3;
+			border-radius: 1rem;
+		}
+		form * {
+			border-radius: 1rem;
+		}
+		input {
+			width: 100%;
+			margin-bottom: 10px;
+			padding: 10px;
+			box-sizing: border-box;
+			border: 1px solid #ccc;
+		}
+		button {
+			width: 100%;
+			font-size: 1em;
+			font-weight: bold;
+			height: 3rem;
+			background: #28d;
+			border: 0;
+			cursor: pointer;
+			color: #fff;
+		}
+		button:hover {
+			background: #17c;
+		}
+		.failed {
+			display: none;
+			color: red;
+			text-align: center;
+			margin-top: 10px;
+		}
+		*:required:placeholder-shown ~ button{
+			background-color: lightgrey;
+			cursor: auto;
+		}
+	</style>
+	<script>
+		console.log(document.location.hostname);
+		async function login(e) {
+			e.preventDefault();
+			let login = {
+				username: document.querySelector('input[name=username]').value,
+				password: document.querySelector('input[name=password]').value
+			}
+			let response = await fetch(`https://${document.location.hostname}/login`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(login)
+			});
+			if (response.ok) {
+				console.log('passed');
+				document.location.reload();
+			} else {
+				document.querySelector('.failed').style.display = 'block';
+			}
+		}
+
+		async function test(e) {
+			e.preventDefault();
+			let login = {
+				username: 'admin',
+				password: 'password'
+			}
+			let response = await fetch(`https://${document.location.hostname}/login`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(login)
+			});
+			if (response.ok) {
+				console.log('passed');
+				// document.location.reload();
+			} else {
+				document.querySelector('.failed').style.display = 'block';
+			}
+		}
+	</script>
+</head>
+<body>
+	<div>
+		<form method="post">
+			<input name=username placeholder=Username required>
+			<input type=password name=password placeholder=Password required>
+			<button type=submit onclick=login(event)>Login</button>
+		</form>
+		<button type=button onclick="test(event)">Test</button>
+		<div class=failed>Login failed</div>
+	</div>
+</body>
+</html>
