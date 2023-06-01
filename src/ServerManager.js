@@ -27,7 +27,10 @@ const __dirname = path.dirname(__filename);
  * 
  * I plan to have it serve a generated sitemap and robots.txt as well.
  * 
- * You can access the express app with the app property in order to add your own routes.
+ * You can access the express app with the app property in order to add your own features.
+ * 
+ * You can access the socket handler (if any) with the ws_handler property, it's server with
+ * ws_handler.server, and it's websocket server with ws_handler.wss.
  * 
  */
 
@@ -38,7 +41,7 @@ export class ServerManager {
 			port: 443,
 			logging: false,
 			cors: false,
-			websocket: false,
+			ws_port: false,
 			sitemap: false,
 			robots: false,
 			nav_menu: false,
@@ -57,8 +60,8 @@ export class ServerManager {
 		this._server = this.startServer();
 
 		// Start
-		if(cfg.websocket) {
-			this._ws_handler = this.startWS();
+		if(cfg.ws_port || cfg.ws_module) {
+			this.ws_handler = this.startWS();
 		}
 	}
 
@@ -66,6 +69,10 @@ export class ServerManager {
 		return this._app;
 	}
 
+<<<<<<< Updated upstream
+=======
+<<<<<<< HEAD
+>>>>>>> Stashed changes
 	/*
 	 * TODO: Add compression if not already done by http2-express-bridge
 	 */
@@ -83,6 +90,16 @@ export class ServerManager {
 	// 			origin: cfg.svr.cors,
 	// 		}));
 	// 	}
+<<<<<<< Updated upstream
+=======
+=======
+	old_constructor() {
+		const __filename = fileURLToPath(import.meta.url);
+		const __dirname = path.dirname(__filename);
+		this._ready = false;
+	}
+>>>>>>> 9dad1557cf7ed46a54372b1126ce184c16fdda2b
+>>>>>>> Stashed changes
 
 	// Set up routing based on config
 	mapRoutes() {
@@ -208,8 +225,14 @@ export class ServerManager {
 
 	/*
 	 * Run a websocket server
+	 *
+	 * @param {string} websocketModule - You can specify your own websocket handler
 	 */
 	async startWS() {
+<<<<<<< Updated upstream
+=======
+<<<<<<< HEAD
+>>>>>>> Stashed changes
 		this.app.log('Starting websocket server.');
 		const { default: SocketHandler } = await import('./SocketHandler.js');
 		let params = {
@@ -218,6 +241,16 @@ export class ServerManager {
 		}
 		Object.assign(params, this._cfg);
 		let handler = new SocketHandler(params);
+<<<<<<< Updated upstream
+=======
+=======
+		let websocketModule = this._cfg.ws_module || './SocketHandler.js';
+		let SH = await import(websocketModule);
+		let SocketHandler = SH.default;
+		//My imlementation doesn't use this._app, but you can use it to pass parameteres if you use your own.
+		let handler = new SocketHandler(this._cfg, this._app);
+>>>>>>> 9dad1557cf7ed46a54372b1126ce184c16fdda2b
+>>>>>>> Stashed changes
 		return handler;
 	}
 

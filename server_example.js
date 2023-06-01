@@ -1,5 +1,5 @@
-import config from './config.js'; 
+import config from './config.js';
+import {ServerManager} from 'easy_http2_ws';
 import express from 'express';
-import {ServerManager} from './src/ServerManager.js';
 
 let manager = new ServerManager(config);
