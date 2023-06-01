@@ -68,6 +68,7 @@ export class ServerManager {
 	get app() {
 		return this._app;
 	}
+
 	/*
 	 * TODO: Add compression if not already done by http2-express-bridge
 	 */
