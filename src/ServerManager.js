@@ -68,11 +68,6 @@ export class ServerManager {
 	get app() {
 		return this._app;
 	}
-
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
->>>>>>> Stashed changes
 	/*
 	 * TODO: Add compression if not already done by http2-express-bridge
 	 */
@@ -90,16 +85,6 @@ export class ServerManager {
 	// 			origin: cfg.svr.cors,
 	// 		}));
 	// 	}
-<<<<<<< Updated upstream
-=======
-=======
-	old_constructor() {
-		const __filename = fileURLToPath(import.meta.url);
-		const __dirname = path.dirname(__filename);
-		this._ready = false;
-	}
->>>>>>> 9dad1557cf7ed46a54372b1126ce184c16fdda2b
->>>>>>> Stashed changes
 
 	// Set up routing based on config
 	mapRoutes() {
@@ -229,28 +214,11 @@ export class ServerManager {
 	 * @param {string} websocketModule - You can specify your own websocket handler
 	 */
 	async startWS() {
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
->>>>>>> Stashed changes
-		this.app.log('Starting websocket server.');
-		const { default: SocketHandler } = await import('./SocketHandler.js');
-		let params = {
-			app: this.app,
-			autopush: autopush
-		}
-		Object.assign(params, this._cfg);
-		let handler = new SocketHandler(params);
-<<<<<<< Updated upstream
-=======
-=======
 		let websocketModule = this._cfg.ws_module || './SocketHandler.js';
 		let SH = await import(websocketModule);
 		let SocketHandler = SH.default;
 		//My imlementation doesn't use this._app, but you can use it to pass parameteres if you use your own.
 		let handler = new SocketHandler(this._cfg, this._app);
->>>>>>> 9dad1557cf7ed46a54372b1126ce184c16fdda2b
->>>>>>> Stashed changes
 		return handler;
 	}
 
