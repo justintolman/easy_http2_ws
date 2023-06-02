@@ -21,8 +21,9 @@ export default class AuthHandler {
 		app.use(route, this.authenticate.bind(this), autopush(path, staticOptions, assetCacheConfig));
 		/*
 		 * TODO: Once authentication is working, modify AuthHandler so that work isn't duplicated with additional paths
+		 * Also make the login and logout paths configurable
 		 */
-		app.post('/login', (req, res) => {
+		app.post('/ehw_login', (req, res) => {
 			this._log(`Login request`);
 			const { username, password } = req.body;
 
@@ -43,7 +44,7 @@ export default class AuthHandler {
 				res.status(401).json({ error: 'Invalid credentials' });
 			}
 		});
-		app.post('/logout', (req, res) => {
+		app.post('/ehw_logout', (req, res) => {
 			try {
 				this._log(`Logout request`);
 				res.clearCookie('authToken');

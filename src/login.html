@@ -65,7 +65,7 @@
 				username: document.querySelector('input[name=username]').value,
 				password: document.querySelector('input[name=password]').value
 			}
-			let response = await fetch(`https://${document.location.hostname}/login`, {
+			let response = await fetch(`https://${document.location.hostname}/ehw_login`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
@@ -86,7 +86,7 @@
 				username: 'admin',
 				password: 'password'
 			}
-			let response = await fetch(`https://${document.location.hostname}/login`, {
+			let response = await fetch(`https://${document.location.hostname}/ehw_login`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'

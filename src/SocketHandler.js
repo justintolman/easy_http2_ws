@@ -21,9 +21,9 @@ export default class SocketHandler {
 			// The cert files were already read in the server manager.
 			cert: config.ssl.cert_data,
 			key: config.ssl.key_data
-		}).listen(config.websocket);
+		}).listen(config.ws_port);
 		this.wss = new WebSocketServer({ server: this.server });
-		this.log(`Websocket server listening on port ${config.websocket}`);
+		this.log(`Websocket server listening on port ${config.ws_port}`);
 		let sh = this;
 		this.wss.on('connection', function connection(ws) {
 			// Create a new client
