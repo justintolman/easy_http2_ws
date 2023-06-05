@@ -10,6 +10,7 @@ export default class AuthHandler {
 		this._autopush = params.autopush;
 		this._secretKey = this._cfg.secretKey;
 		this._login_page = params.login_page;
+		this.checkParams(params);
 
 		this._log(`AuthHandler created`);
 		app.use(express.json());
@@ -91,9 +92,33 @@ export default class AuthHandler {
 		this._log(`Validating user: ${username}`);
 		return this._cfg.users.find(user => user.user === username && user.key === password);
 	}
-	
+
+	/*
+	 * Send the login page if the user is not authorized
+	 */
 	sendLogin(res) {
 		this._log(`Sending login page: ${this._login_page}`);
 		res.sendFile(this._login_page);
+	}
+
+	/*
+	 * Check that the required parameters are present for private routes in the config.js. If not generate credentials log them.
+	 */
+	checkParams(params) {
+		let newValues = {};
+		let result = {};
+		if(!params.config.secretKey) {
+			this._log(`Generating secret key`);
+			this._secretKey = newValues.secretKey = crypto.randomUUID();
+		}
+		if(!params.config.users?.length) {
+			this._log(`Generating user credentials`);
+			this._cfg.users = newValues.users = [{ user: 'admin', key: crypto.randomUUID() }];
+		}
+		if(newValues !== {}) {
+			Object.assign(result, params.config, newValues);
+			console.warn('Temporary credentials generated.\nPlease update your config.js file with the following values if you want them to be permanent:');
+			console.warn(newValues);
+		}
 	}
 }

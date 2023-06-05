@@ -59,7 +59,6 @@
 		}
 	</style>
 	<script>
-		console.log(document.location.hostname);
 		async function login(e) {
 			e.preventDefault();
 			let login = {
@@ -75,7 +74,6 @@
 				body: JSON.stringify(login)
 			});
 			if (response.ok) {
-				console.log('passed');
 				document.location.reload();
 			} else {
 				document.querySelector('.failed').style.display = 'block';

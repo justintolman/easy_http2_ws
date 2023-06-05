@@ -141,8 +141,9 @@ class Room {
 			let client = this._clients.find(client => client.id === msg.direct);
 			if(client) client.talk(msg);
 			this.log(`SocketHandler Room.message(): Direct message sent to ${msg.direct} from ${msg.sender.id}`);
-		}
-		else {
+		} else if(msg.broadcast) {
+			this.broadcast(msg);
+		} else {
 			this._clients.forEach(client => {
 				if(client.id !== msg.sender.id) client.talk(msg);
 			});
@@ -172,6 +173,7 @@ class Client {
 				//loop through message parameters and run any client actions
 				for(let param in msg) {
 					if(this._socketHandler.clientActions.hasOwnProperty(param)) {
+						if(typeof msg[param] !== 'string') msg[param] = msg[param].toString();
 						this._socketHandler.clientActions[param](this, msg[param], msg);
 					}
 				}
