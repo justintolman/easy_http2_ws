@@ -38,6 +38,7 @@ An easy http/2 server with automatic http/2 push intended for quick deployment o
 * CORS
 * Automatic Sitemap Generation
 * Automatic robots.txt Generation
+* Automatic nav menu generation
 
 ## Simple Usage
 Add easy_http_ws as a dependency for your project:
@@ -116,6 +117,27 @@ To turn on an the default HTTPS WebSocket server include a "ws_port" value in co
 		...
 	}
 
+To add custom server responses use .clientActions. For security reasons, I've limited the main value to a string,
+but you can still access the full message with the third argument.
+
+	//Example broadcating the same random integer in a range that you pass to all clients in the room, including the sender.
+	mySocketHandler.clientActions['my_action'] = (client, value, msg) => {
+		// Split the range
+		let range = value.split('-');
+		// Convert to integers
+		range[0] = range[0].parseInt();
+		range[1] = range[1].parseInt();
+		let rand = Math.floor(Math.random() * range[1]) + range[0];
+		msg.broadcast = true;
+		// Alternately you could delete all message values and use client.room,broadcast();
+		msg.rando = rand;
+		delete msg.my_action;
+		// Any values that arent deleted get passed on with the message. If all message values are deleted the message is not passed on.
+	}
+
+Using ES6 inheritence SockentHandler could be extended to handle password protected sockets,
+but that's beyond the scope of what I need at this time.
+
 To implement your own WebSocket handler set the "ws_module" value in config.js.
 
 	{
@@ -138,6 +160,12 @@ For custom routes use an array with the key "routes" in config.js.
 		],
 		...
 	}
+
+When the required features are turned on, the following options to limit acces are available:
+ * nobots: dissallowed to bots in robots.txt
+ * nomap: not listed in sitemap.xml
+ * hidden: not listed in sitemap.xml and disallows bots (no login)
+ * private: requires login
 
 ### Private Routes
 
@@ -219,15 +247,45 @@ Note: This isn't implemented yet, for use .app.use() if you need cors.
 
 ### Robots.txt
 
-Note: Automated generition of robots.txt isn't implemented yet
+This generates a simple robots.txt file that provides rukes for all bots. To turn it on set robots to true in config.js. If you need more specific rules (I.E. different rules for Googlebot than AdsBot-Google) you will need to create your robots.txt a different way. If you also generate a sitmap it will be linked in the robots.txt file. (Both domain only and www will be assumed.)
+
+Routes that are marked with private, hidden, or nobots will be disallowed to all (reputable) bots in the robots.txt file.
+
+	{
+		...
+		robots: true,
+		routes: [
+			{ path: 'private/file/path', route: '/private_route', private: true },
+			{ path: 'hidden/file/path', route: '/hidden_route', hidden: true },
+			{ path: 'path/for/humans/only', route: '/nobot_route', nobots: true },
+			{ path: 'some_file_path', route: '/crawling/allowed' }
+		],
+		...
+	}
+
+Note: If you need to use prevent search engines from indexing a page with noindex, the easiest way to do so with this setup is to add the meta tag <meta name="robots" content="noindex"> to that page. robots.txt just prevents the search engine from crawling the page. pages that are linked to from other websites may still be indexed, while noindex will prevent the page from being indexed at all.
+
+The file is regenerated every time the server is restarted.
 
 ### Sitemap
 
-Note: Automated generition of and xml sitemap isn't implemented yet
+Adds a sitemap.xml file to the root of the website for search engine indexing, along with an xslt for human readablity. To turn it on set sitemap to true in config.js.
 
-### Nav menu
+Routes that are marked with private, hidden, or nomap will not be listed in the sitemap.xml file.
 
-Note: Navigation menu based on the sitemap isn't implemented yet
+	{
+		...
+		sitemap: true,
+		routes: [
+			{ path: 'private/file/path', route: '/private_route', private: true },
+			{ path: 'hidden/file/path', route: '/hidden_route', hidden: true },
+			{ path: 'path/for/humans/only', route: '/nomap_route', nomap: true },
+			{ path: 'some_file_path', route: '/mapped' }
+		],
+		...
+	}
+	
+The file is regenerated every time the server is restarted.
 
 ### Config Example
 

@@ -1,11 +1,9 @@
-
 /*
  * This socket hendler is suitible for use with small prototype projects.
  * Messages are stored in memory, larger projects should use databases for persistance and distributed computing.
  * To clear up memory, messages should be deleted when the last client leaves the room.
  */
 
-import crypto from "crypto";
 import { createServer } from 'https';
 import { WebSocketServer } from 'ws';
 /*
@@ -14,8 +12,10 @@ import { WebSocketServer } from 'ws';
  * @param {string} route - The route to add the websocket routes to.
  */
 export default class SocketHandler {
-	constructor(config){
-		this.log = config.app.log;
+	constructor(config, app) {
+		//add logging function to the class prototype
+		if(!SocketHandler.log) SocketHandler.log = app.log;
+		this.log = SocketHandler.log;
 		this.log('Starting websocket handler');
 		this.server = createServer({
 			// The cert files were already read in the server manager.
@@ -27,146 +27,190 @@ export default class SocketHandler {
 		let sh = this;
 		this.wss.on('connection', function connection(ws) {
 			// Create a new client
-			ws.id = crypto.randomUUID();
+			ws.ehw_client_id = sh.generateId();
 			let client = new Client(ws, sh);
-			client.hear({type:'registration', id:client.id});
+			client.hear({ type: 'registration', id: client.id });
 		});
-		this.rooms = {};
+		this._rooms = {};
+		// This is a list of actions that the client can perform. Allows users to add custom actions.
+		this.clientActions = {
+			set_name: (client, name, msg) => {
+				client.name = name;
+				delete msg.set_name;
+			},
+			set_room: (client, name, msg) => {
+				client.room = name;
+				delete msg.set_room;
+			}
+		};
 	}
 
-	addRoom(name='default'){
-		this.log(`Adding websocket room ${name}`);
-		if(!this._rooms.hasOwnProperty(name)) return;
-		this._rooms[name] = new Room(name);
+	addRoom(name) {
+		this.log(`SocketHandler.addRoom(): Adding websocket room ${name}`);
+		if(this._rooms.hasOwnProperty(name)) return this._rooms[name];
+		return this._rooms[name] = new Room(name);
 	}
 
-	removeRoom(room){
-		this.log(`Removing websocket room ${name}`);
+	removeRoom(room) {
+		this.log(`SocketHandler.removeRoom(): Removing websocket room ${room.name}`);
 		if(room.clientCount !== 0) return;
 		delete this._rooms[room.name];
 	}
 
-	joinRoom(client, name='default'){
+	joinRoom(client, name) {
+		name = name||'default';
 		if(!this._rooms.hasOwnProperty(name)) this.addRoom(name);
-		this._rooms[name].addClient(client);
-		roo.broadcast({type:'join', sender:'room', msg:`${client.name||client.id} joined the room.`});
-		this.log(`Client ${client.id} joined websocket room ${name}`);
+		let room = this._rooms[name];
+		room.addClient(client);
+		room.broadcast({type:'join', sender:'room: '+name, msg:`${client.name||client.id} joined the room.`});
+		this.log(`SocketHandler.joinRoom(): Client ${client.id} joined websocket room ${name}`);
+		return room;
 	}
 
-	leaveRoom(client){
-		this.log(`Client ${client.id} left websocket room ${name}`);
-		client.room.removeClient(client);
+	leaveRoom(client) {
+		let room = client.room;
+		this.log(`SocketHandler.leaveRoom(): Client ${client.id} left websocket room ${room.name}`);
+		room.removeClient(client);
 		if(room.clientCount === 0) this.removeRoom(room);
-		else room.message({type:'leave', sender:'room', msg:`${client.name} left the room.`});
+		else room.message({type:'leave', sender:'room: ' + room.name, msg:`${client.name} left the room.`});
 	}
 
-	roomExists(name){
+	roomExists(name) {
 		return this._rooms.hasOwnProperty(name);
 	}
 
-	removeBrokenConnections(){
+	removeBrokenConnections() {
 
+	}
+
+	/*
+	 * Generates a random six character id with 32^6 possible combinations.
+	 * The possibility is low enough for our purposes.
+	 */
+	generateId() {
+		this.log('Generating client id');
+		let id = '';
+		for(let i=0; i<6; i++) {
+			let rand =  Math.floor(Math.random()*62);
+			id+=String.fromCharCode(rand+48+(rand>9?7:0)+(rand>35?6:0));
+		}
+		// 48-57 0-9
+		// 65-90 A-Z
+		// 97-122 a-z
+		this.log(`Generated client id ${id}`);
+		return id;
 	}
 }
 
 class Room {
-	constructor(name, logging){
-		this.log = logging;
+	constructor(name) {
+		this.log = SocketHandler.log;
 		this.name = name;
 		this._clients = [];
 		this._messages = [];
 	}
 
-	get clientCount(){
+	get clientCount() {
 		return this._clients.length;
 	}
 
-	addClient(client){
+	addClient(client) {
 		this._clients.push(client);
-		client.send({history: this._messages});
+		this.log(`SocketHandler Room.addClient(): Client ${client.id} added to room ${this.name}`);
 	}
 	
-	removeClient(client){
-		this._clients = this._clients.filter(c => c !== client);
+	removeClient(client) {
+		this._clients.splice(this._clients.indexOf(client), 1);
+		this.log(`SocketHandler Room.removeClient(): Client ${client.id} removed from room ${this.name}`);
 	}
 
-	get _messages(){
+	hasClient(client) {
+		return this._clients.includes(client);
+	}
+
+	get messages() {
 		return this._messages;
+		this.log(`SocketHandler Room.messages(): Message history sent for room ${this.name}`);
 	}
 
-	message(msg, broadcast){
+	message(msg) {
 		/*
 		 * To send a direct message, the cleint application should set the direct property of the message to the id of the recipient.
 		 */
-		if(msg.direct){
-			this.log(`${msg.sender.id} sending direct message ${msg} to ${msg.direct}`);
-			let recipient = this._clients.find(client=>client.id === direct);
-			if(recipient) recipient.hear(msg);
-		} else {
-			this.log(`Room ${this.name} ${broadcast?'broadcasting':'sending'} message ${msg}`);
-			if(broadcast) this._clients.forEach(client=>client.hear(msg));
-			else this._clients.map(client => {if(client.id !== msg.sender.id) client.hear(msg)});
+		if(msg.direct) {
+			let client = this._clients.find(client => client.id === msg.direct);
+			if(client) client.talk(msg);
+			this.log(`SocketHandler Room.message(): Direct message sent to ${msg.direct} from ${msg.sender.id}`);
+		}
+		else {
+			this._clients.forEach(client => {
+				if(client.id !== msg.sender.id) client.talk(msg);
+			});
 			this._messages.push(msg);
+			this.log(`SocketHandler Room.message(): Message sent to room ${this.name}`);
 		}
 	}
 
-	blroadcast(msg){
-		this.message(msg, true);
+	broadcast(msg) {
+		this._clients.forEach(client => client.hear(msg));
+		this.log(`SocketHandler Room.broadcast(): Message broadcast to room ${this.name}`);
 	}
 
 }
 
 class Client {
-	constructor(ws, socket_handler){
+	constructor(ws, socket_handler) {
 		this.log = socket_handler.log;
-		this._socket_handler = socket_handler;
+		this._socketHandler = socket_handler;
 		this._ws = ws;
-		this.id = ws.id;
-		this._name = 'Anonymous';
-		this.room = null;
-		this.log(`Client ${this.id} connected`);
+		this.id = ws.ehw_client_id;
+		this.log(`SocketHandler: Client ${this.id} connected`);
 		ws.on('message', msg => {
-			this.talk(msg);
+			this.log(`\nSocketHandler Client ws.on('message'): Message from ${this.id}: ${msg}`);
+			try {
+				msg = JSON.parse(msg);
+				//loop through message parameters and run any client actions
+				for(let param in msg) {
+					if(this._socketHandler.clientActions.hasOwnProperty(param)) {
+						this._socketHandler.clientActions[param](this, msg[param], msg);
+					}
+				}
+			} catch(e) {}
+			if(msg !== {}) this.talk(msg);
 		});
-		ws.on('close', () => this._socket_handler.leaveRoom(this));
-		ws.on('name', name => this._name = name);
-		ws.on('join_room', room_name => this._socket_handler.joinRoom(this, room_name));
-		ws.on('make_room', room_name => {
-			if(this._socket_handler.roomExists(room_name)) this.talk({type:'error', msg:`Room ${room_name} already exists.`, direct:this.id});
-			else this._socket_handler.joinRoom(this, room_name);
-		});
+		ws.on('close', () => this._socketHandler.leaveRoom(this));
 	}
 
-	get name(){
+	get name() {
 		return this._name;
 	}
 
-	set name(name){
+	set name(name) {
 		this._name = name;
-		this.log(`Client ${this.id} changed name to ${name}`);
+		this.log(`SocketHandler Client.name(): Client ${this.id} changed name to ${name}`);
 	}
 
-	get room(){
+	get room() {
 		return this._room;
 	}
 
-	set room(name){
-		if(this._room) this._room.removeClient(this);
-		this._room = room;
-		this.log(`Client ${this.id} changed room to ${room.name}`);
+	set room(name) {
+		if(this.room) this.room.removeClient(this);
+		this._room = this._socketHandler.joinRoom(this, name);
+		this.log(`SocketHandler Client.Room(): Client ${this.id} changed room to ${this.room.name}`);
 	}
 
-	talk(msg){
-		let m = msg
+	talk(msg) {
+		let m = msg;
 		msg.sender = {id:this.id, name:this._name};
-		if(direct) msg.dm = direct;
-		this._room.message(m);
-		this.log(`Client ${this.id} said ${msg}`);
+		this.log(`SocketHandler Client.talk(): Client ${this.id} said ${msg}`);
+		this.room.message(m);
 	}
 
-	hear(msg){
+	hear(msg) {
+		if(typeof msg !== 'string') msg = JSON.stringify(msg);
 		this._ws.send(msg);
-		this.log(`Client ${this.id} heard ${msg}`);
+		this.log(`SocketHandler Client.hear(): Client ${this.id} heard ${msg}`);
 	}
 
 }

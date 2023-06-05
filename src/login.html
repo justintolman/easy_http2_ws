@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 	<title>Login</title>
 	<style>
 		body {
@@ -63,9 +64,10 @@
 			e.preventDefault();
 			let login = {
 				username: document.querySelector('input[name=username]').value,
-				password: document.querySelector('input[name=password]').value
+				password: document.querySelector('input[name=password]').value,
+				type: 'login'
 			}
-			let response = await fetch(`https://${document.location.hostname}/ehw_login`, {
+			let response = await fetch(`https://${document.location.hostname}/ehw_auth`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
@@ -79,27 +81,6 @@
 				document.querySelector('.failed').style.display = 'block';
 			}
 		}
-
-		async function test(e) {
-			e.preventDefault();
-			let login = {
-				username: 'admin',
-				password: 'password'
-			}
-			let response = await fetch(`https://${document.location.hostname}/ehw_login`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify(login)
-			});
-			if (response.ok) {
-				console.log('passed');
-				// document.location.reload();
-			} else {
-				document.querySelector('.failed').style.display = 'block';
-			}
-		}
 	</script>
 </head>
 <body>
@@ -109,7 +90,6 @@
 			<input type=password name=password placeholder=Password required>
 			<button type=submit onclick=login(event)>Login</button>
 		</form>
-		<button type=button onclick="test(event)">Test</button>
 		<div class=failed>Login failed</div>
 	</div>
 </body>

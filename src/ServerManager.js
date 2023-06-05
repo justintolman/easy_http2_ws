@@ -91,17 +91,119 @@ export class ServerManager {
 		this.app.log('Mapping routes');
 		let cfg = this._cfg;
 		if(cfg.routes?.length > 0){
-			cfg.routes?.forEach((r) => {
+			cfg.routes?.forEach((r, i, arr) => {
+				let last = i === arr.length - 1;
 				//Handle private routes
-				if(r.private) this.addPrivateRoute(r.path, r.route, r.options);
+				if(r.private) this.addPrivateRoute(r.route, r.path, r.options, r.push_config);
 				//Handle public routes
-				else this.addStaticRoute(r.path, r.route, r.options, r.push_config);
+				else {
+					this.addStaticRoute(r.path, r.route, r.options, r.push_config);
+					if(!r.hidden){
+						if(cfg.nav_menu && !r.nomap) this.sitemap(r, last);
+						if(cfg.robots && !r.nofollow) this.robots(r,last);
+					}
+					if(cfg.sitemap || cfg.nav_menu) this.addSitemapRoute(r.path, r.route);
+				}
 			});
 		}
 
 		//Set up default route
 		if(cfg.routes?.find(r => r.path === '/') === undefined && cfg.root === undefined) this.addStaticRoute();
 		if(cfg.hasOwnProperty('root')) this.addStaticRoute(cfg.root);
+	}
+
+	/*
+	 * MAp the files in the public folder to the routes in the config file
+	 */
+	async mapFiles(path, route, last) {
+		let root;
+		let urls = [];
+		if(!this._mapArr) this._mapArr = [];
+		if( listing.path === '/' ) root = listing.route;
+		//iterate through the routes and add them to the sitemap
+		//Get thet files and folders from the route
+		let fileArr = this.traverseDir(path.join(__dirname, route));
+		//merge fileArr with this._mapArr without duplicates
+		this._mapArr = [...new Set([...this._mapArr, ...fileArr])];
+		if(last) {
+			// Compare this._mapArr with This._cfg.routes in case any private, hidden, or nomap routes were added from subdirectories and remove any matches
+			this._mapArr = this._mapArr.filter(f => !this._cfg.routes.find(r => r.path === f && (r.private || r.hidden || r.nomap)));
+			// Convert each file to a url based on  This._cfg.routes
+			this._mapArr.forEach(f => {
+				let route = this._cfg.routes.find(r => r.path === f);
+				//TODO: This isn't right, but close
+				if(route) urls.push(`<url><loc>${route.route}</loc></url>`);
+			});
+			let sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+				'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+				urls.join('\n') +
+				'\n</urlset>';
+			fs.writeFile(path.join(__dirname, root, 'sitemap.xml'), sitemap, err => {
+				if(err) console.error("sitemap.xml not saved",err);
+			});
+			if(this._cfg.nav_menu) {
+				let jsMap = `export default ${ this._mapArr.toString() }`;
+				fs.writeFile(path.join(__dirname, root, 'sitemap.js'), jsMap, err => {
+					if(err) console.error("sitemap.js not saved",err);
+				});
+			}
+			if(this._cfg.sitemap) {
+				this.mapToXML();
+			}
+		}
+
+	}
+
+	/*
+	 * Generate a sitemap.xml file
+	 */
+	mapToXML() {
+		let jsMap = this._mapArr;
+		let map = jsMap.map(m => {
+`
+	<url>
+		<loc>${m}</loc>
+	</url>
+`
+	});
+
+		let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${map.join()}
+</urlset>
+`
+		;
+		fs.writeFile(path.join(__dirname, 'sitemap.xml'), xml, err => {
+			if(err) console.error("sitemap.xml not saved",err);
+		});
+	}
+
+	/*
+	 * Add rules to the robots.txt file
+	 */
+	async robots(listing, last) {
+		let root;
+		let rules = [];
+		if( listing.path === '/' ) root = listing.route;
+		if( listing.hidden || listing.nobots ) rules.push(`Disallow: ${listing.route}`);
+		else rules.push(`Allow: ${listing.route}`);
+		if(last) {
+			let robots = 'User-agent: *\n' + rules.join('\n');
+			fs.writeFile(path.join(__dirname, root, 'robots.txt'), robots, err => {
+				if(err) console.error("robots.txt not saved",err);
+			});
+		}
+
+		/* TODO: Generate robots.txt and save to root directory */
+		
+
+
+		// User-agent: *
+		// Disallow: /
+
+		
+		// User-agent: *
+		// Allow: /
 	}
 
 	/*
@@ -157,37 +259,29 @@ export class ServerManager {
 	 * The path to the module should be provided under auth_module the config.js file,
 	 * and should provide a default export as the entry point.
 	 */ 
-	async addPrivateRoute(f_path, route, staticOptions, assetCacheConfig) {
+	async addPrivateRoute(route, f_path, staticOptions, assetCacheConfig) {
 		this.app.log(`Adding private route: ${route} for path: ${path}`);
 		let params = {
 			app: this.app,
 			config: this._cfg,
-			route: route,
 			path: this.convertPath(f_path),
-			autopush: autopush,
-			staticOptions: staticOptions,
-			assetCacheConfig: assetCacheConfig
+			autopush: autopush
 		}
 		if(this._cfg.login_page) params.login_page = this.convertPath(this._cfg.login_page);
 		else params.login_page = path.join(__dirname, 'login.html');
 		// Use a custom authentication module if provided
 		let module = this._cfg.auth_module||'./AuthHandler.js';
 		// Make sure that the AuthHandler is only loaded once. 
-		let Auth;
+		let auth;
 		if(this._authHandler){
-			Auth = this._authHandler;
+			auth = this._authHandler;
 		} else {
 			this.app.log(`Loading authentication module: ${module}`);
-			let { default: tmp } = await import(module);
-			Auth = this._authHandler = tmp;
+			let { default: AuthHandler } = await import(module);
+			auth = this._authHandler = new AuthHandler(params);
 		}
-		//attempts to run the provied module as a class. If it fails, it runs it as a function.
-		try {
-			new Auth(params);
-		} catch (error) {
-			console.log(error);
-			Auth(params);
-		}
+		// Add the route
+		auth.addRoute(route, f_path, staticOptions, assetCacheConfig);
 	}
 
 	// Start an http/2 server
@@ -216,8 +310,8 @@ export class ServerManager {
 				}
 			});
 			return server;
-		} catch (error) {
-			console.error('Failed to read SSL certs:', error);
+		} catch (err) {
+			console.error('Failed to read SSL certs:', err);
 			process.exit(1);
 		}
 	}
@@ -253,15 +347,25 @@ export class ServerManager {
 		redirect_server.listen(port);
 	}
 
-	// Generate sitemap, robots.txt and a reusable navigation menu
-	async mapSite() {
-		/* TODO: Generate sitemap and save to root directory */
-		/* TODO: add xsl to the stylesheet to make it navigable by humans */
-		/* TODO: Generaterobots.txt and save to root directory */
-	}
-
 	// Convert path delimiters as appropriate for the operating system;
 	convertPath(pathStr) {
 		return path.join(pathStr.split(['/','\\']).join());
+	}
+
+	
+	traverseDir = function(dirPath, dirArr) {
+		files = fs.readdirSync(dirPath);
+
+		dirArr = dirArr || [];
+
+		files.forEach(function(file) {
+			if (fs.statSync(dirPath + "/" + file).isDirectory()) {
+				dirArr = getAllFiles(dirPath + "/" + file, dirArr);
+			} else {
+				dirArr.push(path.join(__dirname, dirPath, "/", file));
+			}
+		})
+
+		return dirArr
 	}
 }

@@ -4,55 +4,65 @@ import cookieParser from 'cookie-parser';
 
 export default class AuthHandler {
 	constructor(params){
-		let app = params.app;
+		let app = this.app = params.app;
 		this._log = app.log;
 		this._cfg = params.config;
-		let route = params.route;
-		let path = params.path;
-		let autopush = params.autopush;
-		let staticOptions = params.staticOptions;
-		let assetCacheConfig = params.assetCacheConfig;
+		this._autopush = params.autopush;
 		this._secretKey = this._cfg.secretKey;
 		this._login_page = params.login_page;
 
-		this._log(`AuthHandler created for route: ${route}`);
+		this._log(`AuthHandler created`);
 		app.use(express.json());
 		app.use(cookieParser());
-		app.use(route, this.authenticate.bind(this), autopush(path, staticOptions, assetCacheConfig));
 		/*
 		 * TODO: Once authentication is working, modify AuthHandler so that work isn't duplicated with additional paths
 		 * Also make the login and logout paths configurable
 		 */
-		app.post('/ehw_login', (req, res) => {
-			this._log(`Login request`);
-			const { username, password } = req.body;
+		app.post('/ehw_auth', (req, res) => {
+			this._log(`Authorization request`);
+			const { username, password, type } = req.body;
+			switch (type) {
+				case 'login':
+					this._log(`Login request`);
+					// Validate the username and password
+					if (this.isValidUser(username, password)) {
+						// If the user is valid, generate a token
+						const payload = { username: username };
+						const token = jwt.sign(payload, this._secretKey);
+						this._log(`Login successful: ${username}`);
 
-			// Validate the username and password
-			if (this.isValidUser(username, password)) {
-				// If the user is valid, generate a token
-				const payload = { username: username };
-				const token = jwt.sign(payload, this._secretKey);
-				this._log(`Login successful: ${username}`);
+						// Store the token in a cookie
+						res.cookie('authToken', token, { httpOnly: true });
+						// Send success message
+						res.json({ message: 'Logged in successfully' });
+						this._log(`Login successful: ${username}`);
+					} else {
+						this._log(`Login failed: Invalid credentials`);
+						// If the user is not valid, return an error response
+						res.status(401).json({ error: 'Invalid credentials' });
+						this._log(`Login failed: Invalid credentials`);
+					}
+					break;
 
-				// Store the token in a cookie
-				res.cookie('authToken', token, { httpOnly: true });
-				// Send success message
-				res.json({ message: 'Logged in successfully' });
-			} else {
-				this._log(`Login failed: Invalid credentials`);
-				// If the user is not valid, return an error response
-				res.status(401).json({ error: 'Invalid credentials' });
+				case 'logout':
+					this._log(`Logout request`);
+					res.clearCookie('authToken');
+					res.json({ message: 'Logged out successfully' });
+					this._log(`Logout successful`);
+					break;
+
+				default:
+					let err = `Invalid request type: ${type}`;
+					this._log(err);
+					res.status(400).json({ error: err });
+					break;
 			}
 		});
-		app.post('/ehw_logout', (req, res) => {
-			try {
-				this._log(`Logout request`);
-				res.clearCookie('authToken');
-				res.json({ message: 'Logged out successfully' });
-			} catch (err) {
-				this._log(`Logout failed: ${err}`);
-			}
-		});
+	}
+
+	addRoute(route, path, staticOptions, assetCacheConfig) {
+		this._log(`Adding route: ${route} at path: ${path}`);
+		this.app.use(route, this.authenticate.bind(this), this._autopush(path, staticOptions, assetCacheConfig));
 	}
 
 	authenticate(req, res, next) {
