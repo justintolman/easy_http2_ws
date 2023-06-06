@@ -89,27 +89,73 @@ export class ServerManager {
 	// Set up routing based on config
 	mapRoutes() {
 		this.app.log('Mapping routes');
+		let root = this._cfg.root || 'public';
 		let cfg = this._cfg;
+		let mapFiles;
 		if(cfg.routes?.length > 0){
+			// if(cfg._nav_menu || cfg._sitemap){
+			// 	mapTree = true
+			// 	this._tree = {
+			// 		route: '/',
+			// 		branches: [],
+			// 	};
+			// }
+			if(this._cfg.robots) this._robots = 'User-agent: *\n';
 			cfg.routes?.forEach((r, i, arr) => {
-				let last = i === arr.length - 1;
+				//Handle robots.txt
+				if(cfg.robots)switch(true){
+					case r.hidden:
+					case r.nobots:
+					case r.private:
+						this._robots += 'Disallow: ' + r.route +'\n';
+						break;
+					default:
+						this._robots += 'Allow: ' + r.route +'\n';
+				}
+				if(r.route === '/') root = r.path;
 				//Handle private routes
-				if(r.private) this.addPrivateRoute(r.route, r.path, r.options, r.push_config);
+				if(r.private) {
+					this.addPrivateRoute(r.route, r.path, r.options, r.push_config);
+					// //add to the filemap if mapFiles is true
+					// if(mapFiles){
+					// 	let pArr = r.path.split('/');
+					// 	forEach(pArr, (p, i) => {
+					// 		if(this._tree.hasOwnProperty(p)) 
+					// 	});
+					// 	this.mapFiles(r.path, r.route, last);
+					// }
+				}
 				//Handle public routes
 				else {
 					this.addStaticRoute(r.path, r.route, r.options, r.push_config);
-					if(!r.hidden){
-						if(cfg.nav_menu && !r.nomap) this.sitemap(r, last);
-						if(cfg.robots && !r.nofollow) this.robots(r,last);
-					}
-					if(cfg.sitemap || cfg.nav_menu) this.addSitemapRoute(r.path, r.route);
+					// if(!r.hidden){
+					// 	if(cfg.nav_menu && !r.nomap) this.sitemap(r, last);
+					// }
+					// if(cfg.sitemap || cfg.nav_menu) this.addSitemapRoute(r.path, r.route);
 				}
 			});
 		}
 
 		//Set up default route
-		if(cfg.routes?.find(r => r.path === '/') === undefined && cfg.root === undefined) this.addStaticRoute();
-		if(cfg.hasOwnProperty('root')) this.addStaticRoute(cfg.root);
+		if(cfg.routes?.find(r => r.route === '/') === undefined){
+			this.addStaticRoute(root);
+			if(cfg.robots) this._robots += 'Allow: /\n';
+		}
+		
+		if(cfg.robots){
+			cfg.nobots.forEach((r) => {
+				this._robots += 'Disallow: ' + r +'\n';
+			});
+
+			if(cfg.sitemap && cfg.domain) this._robots += '\nSitemap: https://' + cfg.domain + '/sitemap.xml\n';
+			//Write robots.txt to the root directory
+			let file_path = path.join(root,'robots.txt')
+
+			this.app.log('Attempting to write robots.txt to: ' + file_path);
+			fs.writeFile(file_path, this._robots, { flag: 'w+' }, (err) => {
+				if(err) console.error(err);
+			});
+		}
 	}
 
 	/*
@@ -267,15 +313,17 @@ ${map.join()}
 			path: this.convertPath(f_path),
 			autopush: autopush
 		}
-		if(this._cfg.login_page) params.login_page = this.convertPath(this._cfg.login_page);
-		else params.login_page = path.join(__dirname, 'login.html');
-		// Use a custom authentication module if provided
-		let module = this._cfg.auth_module||'./AuthHandler.js';
-		// Make sure that the AuthHandler is only loaded once. 
 		let auth;
+		// Use the existing AuthHandler if present otherwise create a new one
 		if(this._authHandler){
 			auth = this._authHandler;
 		} else {
+			// Use a custom login page if provided
+			if(this._cfg.login_page) params.login_page = this.convertPath(this._cfg.login_page);
+			else params.login_page = path.join(__dirname, 'login.html');
+			// Use a custom authentication module if provided
+			let module = this._cfg.auth_module||'./AuthHandler.js';
+			// Make sure that the AuthHandler is only loaded once.
 			this.app.log(`Loading authentication module: ${module}`);
 			let { default: AuthHandler } = await import(module);
 			auth = this._authHandler = new AuthHandler(params);

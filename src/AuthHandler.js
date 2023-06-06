@@ -115,7 +115,7 @@ export default class AuthHandler {
 			this._log(`Generating user credentials`);
 			this._cfg.users = newValues.users = [{ user: 'admin', key: crypto.randomUUID() }];
 		}
-		if(newValues !== {}) {
+		if(Object.keys(newValues).length) {
 			Object.assign(result, params.config, newValues);
 			console.warn('Temporary credentials generated.\nPlease update your config.js file with the following values if you want them to be permanent:');
 			console.warn(newValues);

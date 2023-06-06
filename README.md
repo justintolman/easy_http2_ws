@@ -32,12 +32,12 @@ An easy http/2 server with automatic http/2 push intended for quick deployment o
 * Routing
 * Simple Authentication
 * Further customization with .app
+* Automatic robots.txt Generation
 
 #### Unfinished
 * Default Error Responses (404 and such.)
 * CORS
 * Automatic Sitemap Generation
-* Automatic robots.txt Generation
 * Automatic nav menu generation
 
 ## Simple Usage
@@ -224,7 +224,9 @@ When the required features are turned on, the following options to limit acces a
 
 ### Private Routes
 
-Requires authentication (See Authentication.)
+**Note:** Files uner a folder with a private route can be made public by adding a puplic route in the config.js file,
+but files under a folder with a public route can't be made private that way.
+(They will be in the private route, but also accessible publicly.)
 
 To make a private route you either need some kind of authentication. Once that is set up you just need to add private: true to the config.js entry.
 
@@ -306,11 +308,19 @@ Note: This isn't implemented yet, for use .app.use() if you need cors.
 
 This generates a simple robots.txt file that provides rukes for all bots. To turn it on set robots to true in config.js. If you need more specific rules (I.E. different rules for Googlebot than AdsBot-Google) you will need to create your robots.txt a different way. If you also generate a sitmap it will be linked in the robots.txt file. (Both domain only and www will be assumed.)
 
-Routes that are marked with private, hidden, or nobots will be disallowed to all (reputable) bots in the robots.txt file.
+Routes that are marked with private, hidden, or nobots will be disallowed to all (reputable) bots in the robots.txt file. as will any routes in the nobots array.
+
+Your site,ap will only be listed in your robots.txt file if you turn on sitemap generation and provide your domain in config.js.
 
 	{
 		...
 		robots: true,
+		domain: 'yourdomain.com',
+		sitemap: true,
+		nobots: [
+			'some/public/route/to/hide/from/bots',
+			'other/public/route/to/hide/from/bots'
+		],
 		routes: [
 			{ path: 'private/file/path', route: '/private_route', private: true },
 			{ path: 'hidden/file/path', route: '/hidden_route', hidden: true },
@@ -325,6 +335,8 @@ Note: If you need to use prevent search engines from indexing a page with noinde
 The file is regenerated every time the server is restarted.
 
 ### Sitemap
+
+Note: This can only handle simple routes, route pattern and regex routes will not be mapped correctly.
 
 Adds a sitemap.xml file to the root of the website for search engine indexing, along with an xslt for human readablity. To turn it on set sitemap to true in config.js.
 
