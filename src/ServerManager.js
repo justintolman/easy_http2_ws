@@ -37,7 +37,7 @@ const __dirname = path.dirname(__filename);
 export class ServerManager {
 	constructor (config) {
 		// Establish defaults
-		this._cfg = {
+		this.cfg = {
 			port: 443,
 			logging: false,
 			cors: false,
@@ -45,11 +45,16 @@ export class ServerManager {
 			sitemap: false,
 			robots: false,
 			nav_menu: false,
+			login_page: 'login.html',
+			error_pages: true,
+			page_404: '404.html',
+			page_500: '500.html',
 		}
 		// Override defaults with config
-		Object.assign(this._cfg, config);
+		Object.assign(this.cfg, config);
 		this._app = http2Express(express);
-		let cfg = this._cfg;
+		this._app.send500 = this.send500.bind(this);
+		let cfg = this.cfg;
 		//Logging
 		this.app.log = l => {if(cfg.logging) console.log(l)};
 
@@ -63,6 +68,9 @@ export class ServerManager {
 		if(cfg.ws_port || cfg.ws_module) {
 			this.ws_handler = this.startWS();
 		}
+		
+		// Set 404 page
+		if(cfg.error_pages) this.routeErr();
 	}
 
 	get app() {
@@ -89,8 +97,8 @@ export class ServerManager {
 	// Set up routing based on config
 	mapRoutes() {
 		this.app.log('Mapping routes');
-		let root = this._cfg.root || 'public';
-		let cfg = this._cfg;
+		let root = this.cfg.root || 'public';
+		let cfg = this.cfg;
 		let mapFiles;
 		if(cfg.routes?.length > 0){
 			// if(cfg._nav_menu || cfg._sitemap){
@@ -100,7 +108,7 @@ export class ServerManager {
 			// 		branches: [],
 			// 	};
 			// }
-			if(this._cfg.robots) this._robots = 'User-agent: *\n';
+			if(this.cfg.robots) this._robots = 'User-agent: *\n';
 			cfg.routes?.forEach((r, i, arr) => {
 				//Handle robots.txt
 				if(cfg.robots)switch(true){
@@ -172,11 +180,11 @@ export class ServerManager {
 		//merge fileArr with this._mapArr without duplicates
 		this._mapArr = [...new Set([...this._mapArr, ...fileArr])];
 		if(last) {
-			// Compare this._mapArr with This._cfg.routes in case any private, hidden, or nomap routes were added from subdirectories and remove any matches
-			this._mapArr = this._mapArr.filter(f => !this._cfg.routes.find(r => r.path === f && (r.private || r.hidden || r.nomap)));
-			// Convert each file to a url based on  This._cfg.routes
+			// Compare this._mapArr with This.cfg.routes in case any private, hidden, or nomap routes were added from subdirectories and remove any matches
+			this._mapArr = this._mapArr.filter(f => !this.cfg.routes.find(r => r.path === f && (r.private || r.hidden || r.nomap)));
+			// Convert each file to a url based on  This.cfg.routes
 			this._mapArr.forEach(f => {
-				let route = this._cfg.routes.find(r => r.path === f);
+				let route = this.cfg.routes.find(r => r.path === f);
 				//TODO: This isn't right, but close
 				if(route) urls.push(`<url><loc>${route.route}</loc></url>`);
 			});
@@ -187,13 +195,13 @@ export class ServerManager {
 			fs.writeFile(path.join(__dirname, root, 'sitemap.xml'), sitemap, err => {
 				if(err) console.error("sitemap.xml not saved",err);
 			});
-			if(this._cfg.nav_menu) {
+			if(this.cfg.nav_menu) {
 				let jsMap = `export default ${ this._mapArr.toString() }`;
 				fs.writeFile(path.join(__dirname, root, 'sitemap.js'), jsMap, err => {
 					if(err) console.error("sitemap.js not saved",err);
 				});
 			}
-			if(this._cfg.sitemap) {
+			if(this.cfg.sitemap) {
 				this.mapToXML();
 			}
 		}
@@ -306,10 +314,10 @@ ${map.join()}
 	 * and should provide a default export as the entry point.
 	 */ 
 	async addPrivateRoute(route, f_path, staticOptions, assetCacheConfig) {
-		this.app.log(`Adding private route: ${route} for path: ${path}`);
+		this.app.log(`Adding private route: ${route} for path: ${f_path}`);
 		let params = {
 			app: this.app,
-			config: this._cfg,
+			config: this.cfg,
 			path: this.convertPath(f_path),
 			autopush: autopush
 		}
@@ -319,10 +327,10 @@ ${map.join()}
 			auth = this._authHandler;
 		} else {
 			// Use a custom login page if provided
-			if(this._cfg.login_page) params.login_page = this.convertPath(this._cfg.login_page);
+			if(this.cfg.login_page) params.login_page = path.join(__dirname, this.cfg.login_page);
 			else params.login_page = path.join(__dirname, 'login.html');
 			// Use a custom authentication module if provided
-			let module = this._cfg.auth_module||'./AuthHandler.js';
+			let module = this.cfg.auth_module||'./AuthHandler.js';
 			// Make sure that the AuthHandler is only loaded once.
 			this.app.log(`Loading authentication module: ${module}`);
 			let { default: AuthHandler } = await import(module);
@@ -339,16 +347,16 @@ ${map.join()}
 		this.redirect();
 		// Load SSL certs
 		try {
-			this._cfg.ssl.key_data = fs.readFileSync(this.convertPath(this._cfg.ssl.key));
-			this._cfg.ssl.cert_data = fs.readFileSync(this.convertPath(this._cfg.ssl.cert));
+			this.cfg.ssl.key_data = fs.readFileSync(this.convertPath(this.cfg.ssl.key));
+			this.cfg.ssl.cert_data = fs.readFileSync(this.convertPath(this.cfg.ssl.cert));
 			let server = http2.createSecureServer({
-				key: this._cfg.ssl.key_data,
-				cert: this._cfg.ssl.cert_data,
+				key: this.cfg.ssl.key_data,
+				cert: this.cfg.ssl.cert_data,
 				allowHTTP1: true
 			}, this.app);
 			this.app.log('SSL certs files read successfully.');
 			this.app.log('  Note: This does not validate the certs, just that the files were read.');
-			let port = this._cfg.port || 443;
+			let port = this.cfg.port || 443;
 			server.listen(port, (err)=>{
 				if(err) {
 					console.error('HTTP2 server failed:', err);
@@ -370,11 +378,11 @@ ${map.join()}
 	 * @param {string} websocketModule - You can specify your own websocket handler
 	 */
 	async startWS() {
-		let websocketModule = this._cfg.ws_module || './SocketHandler.js';
+		let websocketModule = this.cfg.ws_module || './SocketHandler.js';
 		let SH = await import(websocketModule);
 		let SocketHandler = SH.default;
 		//My imlementation doesn't use this._app, but you can use it to pass parameteres if you use your own.
-		let handler = new SocketHandler(this._cfg, this._app);
+		let handler = new SocketHandler(this.cfg, this._app);
 		return handler;
 	}
 
@@ -386,7 +394,7 @@ ${map.join()}
 		 * instead of a redirect.
 		 */
 		this.app.log('Setting up http to https redirect.');
-		let port = this._cfg.insecure_port || 80;
+		let port = this.cfg.insecure_port || 80;
 		let redirect_server = http.createServer((req, res) => {
 			res.writeHead(301,{Location: `https://${req.headers.host}${req.url}`});
 			res.end();
@@ -415,5 +423,74 @@ ${map.join()}
 		})
 
 		return dirArr
+	}
+
+	/*
+	 * Handle 404 and server errors
+	 */
+	routeErr() {
+		let delayed = function() {
+
+			//Set routing for routes that don't exist
+			this.app.all('*', (req, res) => {
+				try {
+					this.send404(res);
+				} catch (err) {
+					this.send500(res, err);
+				}
+			});
+
+			// Set route for automatic 500 page on error
+			// Note: This doesn't seem to work all the time. add try/catch to each route out of caution.
+			this.app.use(function(err, req, res) {
+				this.send500(res, err);
+			});
+		}
+		
+		// This needs to be the last rout added so the delay is added.
+		setTimeout( delayed.bind(this), 1000);
+
+		// Send 404 page
+		this.app.get('/ehw_error_test', (req, res) => {
+			try {
+				throw new Error('Test error');
+			} catch (err) {
+				this.app.log('Test error crated');
+				this.send500(res, err);
+			}
+		});
+
+		// Route to test 404 page
+		this.app.get('/ehw_404_test', (req, res) => {
+			this.send404(res);
+		});
+
+		// Route to test error page
+		this.app.get('/ehw_error_test', (req, res) => {
+			try {
+				throw new Error('Test error');
+			} catch (err) {
+				this.app.log('Test error crated');
+				this.send500(res, err);
+			}
+		});
+	}
+
+	/*
+	 * Send 404 page on error
+	 */
+	send404(res, err) {
+		let file_path = path.join(__dirname,this.cfg.page_404);
+		this.app.log(`Sending error page: ${file_path}`);
+		res.status(404).sendFile(file_path);
+	}
+
+	/*
+	 * Send 500 page on error
+	 */
+	send500(res, err) {
+		let file_path = path.join(__dirname,this.cfg.page_500);
+		this.app.log(`Sending error page: ${file_path}`);
+		res.status(404).sendFile(file_path);
 	}
 }

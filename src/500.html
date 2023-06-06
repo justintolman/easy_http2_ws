@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>500 Error</title>
+	<style>
+		body {
+			background-color: #fff;
+			font-family: Arial, Helvetica, sans-serif;
+			text-align: center;
+			animation: toBlack 0.5s 3.5s forwards;
+		}
+		h1 {
+			position: relative;
+			border-radius: 0.5rem;
+			background-color: #222;
+			color: #f00;
+			max-width: 4in;
+			padding: 1rem;
+			margin: 0 auto;
+			transform-origin: top right;
+			animation: h1 1s 2s forwards;
+		}
+		h3 {
+			color: #222;
+			width: 4in;
+			margin: 2rem auto;
+		}
+		div {
+			border-radius: 0.5rem;
+			background-color: #666;
+			padding: 1rem 0;
+			width: 4in;
+		}
+		.stay {
+			clip-path: polygon(0% 0%, 52% 0%, 48% 25%, 50% 40%, 46% 53%, 51% 63%, 47% 71%, 50% 82%, 44% 100%, 0% 100%);
+		}
+		.snap {
+			position: absolute;
+			clip-path: polygon(100% 0%, 51% 0%, 47% 25%, 49% 40%, 45% 53%, 50% 63%, 46% 71%, 49% 82%, 43% 100%, 100% 100%);
+			transform-origin: bottom;
+			animation: h3 0.2s 3s forwards, drop 0.5s ease-in 4s forwards;
+		}
+		main {
+			border-radius: 0.5rem;
+			background-color: aliceblue;
+			max-width: 4in;
+			margin: 0 auto;
+			padding: 0.2rem 3rem;
+		}
+		a {
+			animation: flicker 2s 3s infinite;
+		}
+		@keyframes h1 {
+			0% {
+				transform: rotate(0deg);
+			}
+			90% {
+				transform: rotate(-1deg);
+			}
+			100% {
+				transform: rotate(-5deg);
+			}
+		}
+		@keyframes h3 {
+			0% {
+				transform: rotate(0deg);
+			}
+			95% {
+				transform: rotate(0deg);
+			}
+			100% {
+				transform: rotate(10deg);
+			}
+		}
+		@keyframes flicker {
+			0% {
+				opacity: 1;
+			}
+			49% {
+				opacity: 1;
+			}
+			50% {
+				opacity: 0.5;
+			}
+			53% {
+				opacity: 1;
+			}
+			57% {
+				opacity: 0.2;
+			}
+			58% {
+				opacity: 0.8;
+			}
+			60% {
+				opacity: 0.5;
+			}
+			64% {
+				opacity: 1;
+			}
+			70% {
+				opacity: 0.6;
+			}
+			72% {
+				opacity: 0.9;
+			}
+			73% {
+				opacity: 0.7;
+			}
+			76% {
+				opacity: 1;
+			}
+			80% {
+				opacity: 0.2;
+			}
+			82% {
+				opacity: 0.8;
+			}
+			85% {
+				opacity: 0.5;
+			}
+			90% {
+				opacity: 1;
+			}
+			95% {
+				opacity: 0.2;
+			}
+			100% {
+				opacity: 1;
+			}
+		}
+		
+		@keyframes drop {
+			0% {
+				transform: translateY(0) rotate(10deg);
+			}
+			100% {
+				transform: translateY(60vh) rotate(10deg);
+			}
+		}
+
+		@keyframes toBlack {
+			form {
+				background-color: #fff;
+			}
+			to {
+				background-color: #000;
+			}
+		}
+	</style>
+</head>
+<body>
+	<header>
+		<h1>500 Server Error</h1>
+		<h3><div class=snap>We're sorry, something went wrong.</div><div class=stay>We're sorry, something went wrong.</div></h3>
+	</header>
+	<main>
+		<p>Try refreshing the page, or return to the <a href='/'>landing page.</a> </p>
+	</main>
+</html>

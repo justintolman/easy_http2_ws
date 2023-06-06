@@ -1,4 +1,4 @@
-# easy_http2_ws
+# easy-http2-ws
 An easy http/2 server with automatic http/2 push intended for quick deployment of small sites with minimal setup e.g. a solo developer's personal website/portfolio for building WebComponents.
 
 * Efficiently serves small files like web components so you don't need to serve a monolighic bundle.
@@ -33,17 +33,17 @@ An easy http/2 server with automatic http/2 push intended for quick deployment o
 * Simple Authentication
 * Further customization with .app
 * Automatic robots.txt Generation
+* Default Error Responses (404 and 500.)
 
 #### Unfinished
-* Default Error Responses (404 and such.)
 * CORS
 * Automatic Sitemap Generation
 * Automatic nav menu generation
 
 ## Simple Usage
-Add easy_http_ws as a dependency for your project:
+Add easy-http-ws as a dependency for your project:
 
-npm add github.com/justintolman/easy_http2_ws
+npm add github.com/justintolman/easy-http2-ws
 
 npm install
 
@@ -356,6 +356,45 @@ Routes that are marked with private, hidden, or nomap will not be listed in the 
 	
 The file is regenerated every time the server is restarted.
 
+### 404 and 500 Error Pages
+
+The project provides a default 404 and 500 error pages that are enabled by default. you can replace them with your own by providing the path to your custom pages in config.js.
+
+	{
+		...
+		error_404: "path/to/your_404.html",
+		error_500: "path/to/your_500.html",
+		...
+	}
+
+The default pages can be tested at /404 and /ehw_error_test.
+
+To turn them off error page handling set error_pages to false in config.js.
+
+	{
+		...
+		error_pages: false,
+		...
+	}
+
+### Customisition with ServerManager.app
+
+You can access the express app for your own customisation by using the .app property of your ServerManager instance.
+For example you vould put the following in your server script.
+
+	import config from './your_config.js'; 
+	import {ServerManager} from 'easy-http2-ws';
+
+	const manager = new ServerManager(config);
+	manager.app.use('/your/custom/route', (req, res) => {
+		try {
+			// Your custom handling.
+		} catch (err) {
+			// Use the built in server error page. (opthinal)
+			manager.send500(res, err);
+		}
+	});
+
 ### Config Example
 
 This is an example of all of the available options in config.js. (Minus details for unimplemented robot.txt, sitemap, and menu.)
@@ -374,10 +413,17 @@ This is an example of all of the available options in config.js. (Minus details 
 		cors: ['example.com', 'another_example.com'],
 		sitemap: true,
 		robots: true,
+		nobots: [
+			'some/public/route/to/hide/from/bots',
+			'other/public/route/to/hide/from/bots'
+		],
 		nav_menu: true,
 		routes: [
 			{ path: 'some_file_path', route: '/route' },
 			{ path: 'other_file_path', route: '/other_route', options: { index: 'something.html' } },
 			{ path: 'deep_file_path/folder', route: '/third_route', options: { index: 'something.html' } }
-		]
+		],
+		error_pages: true,
+		error_404: "path/to/your_404.html",
+		error_500: "path/to/your_500.html",
 	}
