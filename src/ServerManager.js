@@ -25,7 +25,9 @@ const __dirname = path.dirname(__filename);
  * Optional websocket server can be turned on in config,js with {ws_port:<port>}.
  * The data is effemeral and channels are removed wen the last client disconnects.
  * 
- * I plan to have it serve a generated sitemap and robots.txt as well.
+ * It can also automatically generate a robots.txt file based on the routes in config.js.
+ * 
+ * I plan to have it serve a generated sitemap and nav menu as well.
  * 
  * You can access the express app with the app property in order to add your own features.
  * 
@@ -58,13 +60,16 @@ export class ServerManager {
 		//Logging
 		this.app.log = l => {if(cfg.logging) console.log(l)};
 
+		// CORS
+		if(cfg.cors) this.addCORS();
+
 		// Set up static routing
 		this.mapRoutes();
 
 		// Start server
 		this._server = this.startServer();
 
-		// Start
+		// Start websocket server
 		if(cfg.ws_port || cfg.ws_module) {
 			this.ws_handler = this.startWS();
 		}
@@ -76,40 +81,47 @@ export class ServerManager {
 	get app() {
 		return this._app;
 	}
-	/*
-	 * TODO: Add compression if not already done by http2-express-bridge
-	 */
-	// 	// Dynamically apply file compression based on browser capabilities.
-	// 	server.register(compress);
 
 	/*
-	 * TODO: Add CORS support.
+	 * Add CORS on a site wide basis.
 	 */
-	// 	//Set CORS settings
-	// 	if(cfg.svr.cors) {
-	// 		const cors = await import('cors');
+	async addCORS() {
+		let cors = await this.importCORSModule();
+		let cors_opts;
+		if(typeof this.cfg.cors === 'array') cors_opts = {origin: this.cfg.cors};
+		console.log('cors', cors, typeof cors_opts, (typeof cors_opts !== 'undefiend'), cors_opts);
+		this.app.use(cors(cors_opts));
+		let opts_str = this.cfg.cors||'';
+		if(typeof opts_str === 'array') opts_str = ' with options: ' + opts_str.toString();
+		this.app.log('Site wide CORS added' + opts_str);
+	}
 
-	// 		app.use(cors({
-	// 			origin: cfg.svr.cors,
-	// 		}));
-	// 	}
+	/*
+	 * Import cors module
+	 * returns the ecisting module if it's already been imported.
+	 */
+	async importCORSModule() {
+		if(this.app.corsModule) return this.app.corsModule;
+		this.app.log('Importing cors module');
+		const { default: CORS } = await import('cors');
+		this.app.corsModule = CORS;
+		return CORS;
+	}
 
-	// Set up routing based on config
+	/*
+	 * Set up routing based on config.
+	 * Also generates robots.txt if configured.
+	 */
 	mapRoutes() {
 		this.app.log('Mapping routes');
 		let root = this.cfg.root || 'public';
 		let cfg = this.cfg;
 		let mapFiles;
 		if(cfg.routes?.length > 0){
-			// if(cfg._nav_menu || cfg._sitemap){
-			// 	mapTree = true
-			// 	this._tree = {
-			// 		route: '/',
-			// 		branches: [],
-			// 	};
-			// }
 			if(this.cfg.robots) this._robots = 'User-agent: *\n';
-			cfg.routes?.forEach((r, i, arr) => {
+			cfg.routes?.forEach( async (r, i, arr) => {
+				//see if the CORS module needs to be loaded
+				if(r.cors) await this.importCORSModule();
 				//Handle robots.txt
 				if(cfg.robots)switch(true){
 					case r.hidden:
@@ -123,23 +135,11 @@ export class ServerManager {
 				if(r.route === '/') root = r.path;
 				//Handle private routes
 				if(r.private) {
-					this.addPrivateRoute(r.route, r.path, r.options, r.push_config);
-					// //add to the filemap if mapFiles is true
-					// if(mapFiles){
-					// 	let pArr = r.path.split('/');
-					// 	forEach(pArr, (p, i) => {
-					// 		if(this._tree.hasOwnProperty(p)) 
-					// 	});
-					// 	this.mapFiles(r.path, r.route, last);
-					// }
+					this.addPrivateRoute(r.route, r.path, r.options, r.push_config, r.cors);
 				}
 				//Handle public routes
 				else {
-					this.addStaticRoute(r.path, r.route, r.options, r.push_config);
-					// if(!r.hidden){
-					// 	if(cfg.nav_menu && !r.nomap) this.sitemap(r, last);
-					// }
-					// if(cfg.sitemap || cfg.nav_menu) this.addSitemapRoute(r.path, r.route);
+					this.addStaticRoute(r.path, r.route, r.options, r.push_config, r.cors);
 				}
 			});
 		}
@@ -167,100 +167,6 @@ export class ServerManager {
 	}
 
 	/*
-	 * MAp the files in the public folder to the routes in the config file
-	 */
-	async mapFiles(path, route, last) {
-		let root;
-		let urls = [];
-		if(!this._mapArr) this._mapArr = [];
-		if( listing.path === '/' ) root = listing.route;
-		//iterate through the routes and add them to the sitemap
-		//Get thet files and folders from the route
-		let fileArr = this.traverseDir(path.join(__dirname, route));
-		//merge fileArr with this._mapArr without duplicates
-		this._mapArr = [...new Set([...this._mapArr, ...fileArr])];
-		if(last) {
-			// Compare this._mapArr with This.cfg.routes in case any private, hidden, or nomap routes were added from subdirectories and remove any matches
-			this._mapArr = this._mapArr.filter(f => !this.cfg.routes.find(r => r.path === f && (r.private || r.hidden || r.nomap)));
-			// Convert each file to a url based on  This.cfg.routes
-			this._mapArr.forEach(f => {
-				let route = this.cfg.routes.find(r => r.path === f);
-				//TODO: This isn't right, but close
-				if(route) urls.push(`<url><loc>${route.route}</loc></url>`);
-			});
-			let sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n' +
-				'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-				urls.join('\n') +
-				'\n</urlset>';
-			fs.writeFile(path.join(__dirname, root, 'sitemap.xml'), sitemap, err => {
-				if(err) console.error("sitemap.xml not saved",err);
-			});
-			if(this.cfg.nav_menu) {
-				let jsMap = `export default ${ this._mapArr.toString() }`;
-				fs.writeFile(path.join(__dirname, root, 'sitemap.js'), jsMap, err => {
-					if(err) console.error("sitemap.js not saved",err);
-				});
-			}
-			if(this.cfg.sitemap) {
-				this.mapToXML();
-			}
-		}
-
-	}
-
-	/*
-	 * Generate a sitemap.xml file
-	 */
-	mapToXML() {
-		let jsMap = this._mapArr;
-		let map = jsMap.map(m => {
-`
-	<url>
-		<loc>${m}</loc>
-	</url>
-`
-	});
-
-		let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${map.join()}
-</urlset>
-`
-		;
-		fs.writeFile(path.join(__dirname, 'sitemap.xml'), xml, err => {
-			if(err) console.error("sitemap.xml not saved",err);
-		});
-	}
-
-	/*
-	 * Add rules to the robots.txt file
-	 */
-	async robots(listing, last) {
-		let root;
-		let rules = [];
-		if( listing.path === '/' ) root = listing.route;
-		if( listing.hidden || listing.nobots ) rules.push(`Disallow: ${listing.route}`);
-		else rules.push(`Allow: ${listing.route}`);
-		if(last) {
-			let robots = 'User-agent: *\n' + rules.join('\n');
-			fs.writeFile(path.join(__dirname, root, 'robots.txt'), robots, err => {
-				if(err) console.error("robots.txt not saved",err);
-			});
-		}
-
-		/* TODO: Generate robots.txt and save to root directory */
-		
-
-
-		// User-agent: *
-		// Disallow: /
-
-		
-		// User-agent: *
-		// Allow: /
-	}
-
-	/*
 	 * Add a static route with automatic http/2 push
 	 *
 	 * @param {string} path - The path to the static files
@@ -276,9 +182,15 @@ ${map.join()}
 	 * 	Optional: It's unlikely that you'll need to use this, but the details are here:
 	 * 	https://www.npmjs.com/package/h2-auto-push
 	 */
-	addStaticRoute(path='public', route='/', staticOptions, assetCacheConfig) {
+	addStaticRoute(path='public', route='/', staticOptions, assetCacheConfig, cors) {
 		this.app.log(`Added static route: ${route} for path: ${path}`);
-		this.app.use(route, autopush(this.convertPath(path), staticOptions, assetCacheConfig));
+		if(cors) {
+			let cors_opts;
+			if(typeof this.cfg.cors === 'array') cors_opts = {origin: this.cfg.cors};
+			this.app.use(route, this.app.corsModule(cors_opts), autopush(this.convertPath(path), staticOptions, assetCacheConfig));
+		} else {
+			this.app.use(route, autopush(this.convertPath(path), staticOptions, assetCacheConfig));
+		}
 	}
 	
 	/*
@@ -313,7 +225,7 @@ ${map.join()}
 	 * The path to the module should be provided under auth_module the config.js file,
 	 * and should provide a default export as the entry point.
 	 */ 
-	async addPrivateRoute(route, f_path, staticOptions, assetCacheConfig) {
+	async addPrivateRoute(route, f_path, staticOptions, assetCacheConfig, cors) {
 		this.app.log(`Adding private route: ${route} for path: ${f_path}`);
 		let params = {
 			app: this.app,
@@ -337,7 +249,7 @@ ${map.join()}
 			auth = this._authHandler = new AuthHandler(params);
 		}
 		// Add the route
-		auth.addRoute(route, f_path, staticOptions, assetCacheConfig);
+		auth.addRoute(route, f_path, staticOptions, assetCacheConfig, cors);
 	}
 
 	// Start an http/2 server

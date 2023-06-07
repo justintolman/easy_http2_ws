@@ -13,7 +13,7 @@ An easy http/2 server with automatic http/2 push intended for quick deployment o
 	}
 
 * All configuration can be done in the config.js file.
-* The server will default to serving only static files from the public folder on port 443. 
+* The server will default to serving only static files (with gzip, deflate, br compression) from the public folder on port 443.
 * Optional websocket server can be turned on in config,js with "ws_port".
 * The data is effemeral and channels are removed wen the last client disconnects.
 
@@ -34,9 +34,9 @@ An easy http/2 server with automatic http/2 push intended for quick deployment o
 * Further customization with .app
 * Automatic robots.txt Generation
 * Default Error Responses (404 and 500.)
+* CORS
 
 #### Unfinished
-* CORS
 * Automatic Sitemap Generation
 * Automatic nav menu generation
 
@@ -300,9 +300,38 @@ To turn on logging set loggint to true in config.js.
 		...
 	}
 
-### CORS
+### Enabling CORS
 
-Note: This isn't implemented yet, for use .app.use() if you need cors.
+Cors can be enabled site wide or on a per route basis. And can be enabled universally or to specific origins.
+To enable cors universally site wide set cors to true in config.js.
+
+	{
+		...
+		cors: true,
+		...
+	}
+
+To enable cors on a per route basis, add a cors array to the route object in config.js.
+
+	{
+		...
+		routes: [
+			{ path: 'some_file_path', route: '/route' },
+			{ path: 'other_file_path', route: '/other_route', options: { index: 'something.html' } },
+			{ path: 'deep_file_path/folder', route: '/third_route', options: { index: 'something.html' } },
+			{ path: 'private/file/path', route: '/private_route', private: true, cors: ['http://example.com', 'http://example2.com'] },
+			{ path: 'public/file/path', route: '/public_route', cors: true }
+		],
+		...
+	}
+
+In eiter cas you can restrict cors to specific origins by providing an array of origins instead of true.
+
+	{
+		...
+		cors: ['http://example.com', 'http://example2.com'],
+		
+	}
 
 ### Robots.txt
 
@@ -367,7 +396,7 @@ The project provides a default 404 and 500 error pages that are enabled by defau
 		...
 	}
 
-The default pages can be tested at /404 and /ehw_error_test.
+The default pages can be tested at /ehw_404_test and /ehw_error_test.
 
 To turn them off error page handling set error_pages to false in config.js.
 

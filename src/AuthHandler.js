@@ -61,9 +61,15 @@ export default class AuthHandler {
 		});
 	}
 
-	addRoute(route, path, staticOptions, assetCacheConfig) {
+	addRoute(route, path, staticOptions, assetCacheConfig, cors) {
 		this._log(`Adding route: ${route} at path: ${path}`);
-		this.app.use(route, this.authenticate.bind(this), this._autopush(path, staticOptions, assetCacheConfig));
+		if(cors) {
+			let cors_opts;
+			if(typeof this.cfg.cors === 'array') cors_opts = {origin: this.cfg.cors};
+			this.app.use(route, this.authenticate.bind(this), this.app.corsModule(cors_opts), this._autopush(path, staticOptions, assetCacheConfig));
+		} else {
+			this.app.use(route, this.authenticate.bind(this), this._autopush(path, staticOptions, assetCacheConfig));
+		}
 	}
 
 	authenticate(req, res, next) {
