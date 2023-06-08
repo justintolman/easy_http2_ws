@@ -363,27 +363,57 @@ Note: If you need to use prevent search engines from indexing a page with noinde
 
 The file is regenerated every time the server is restarted.
 
-### Sitemap
-
-Note: This can only handle simple routes, route pattern and regex routes will not be mapped correctly.
+### Sitemap.xml
 
 Adds a sitemap.xml file to the root of the website for search engine indexing, along with an xslt for human readablity. To turn it on set sitemap to true in config.js.
 
-Routes that are marked with private, hidden, or nomap will not be listed in the sitemap.xml file.
+Note: This can only handle simple routes, route pattern and regex routes will not be mapped correctly.
+At this time it also will not support the image or video sitemap extensions. To use a more advanced site map, build your own and set the sitemap value to a string with the path to your sitemap file instead of true in config.js.
+
+Routes that are marked with private, hidden, nobots, or nomap will not be listed in the sitemap.xml file.
+
+loc and lastmod values will be added automatically.
+You can add information to sitemap enntries using sitemap_add in config.js as shown below. The information will be added for the matching route. If you need to add much information here, you may be better off building your own sitemap.
 
 	{
 		...
 		sitemap: true,
+		domain: 'yourdomain.com',
+		sitemap_add: {
+			"/route/with/additions": {
+				changefreq: "monthly",
+				priority: "0.8",
+				link: {
+					_attributes: {
+						rel: 'alternate',
+						href: 'https://example.com/',
+						hreflang: 'x-default'
+					}
+				}
+			},
+			"/another/route/with/additions": {
+				changefreq: "monthly",
+				priority: "0.8"
+			}
+		}
+	}
+			}
+		}
 		routes: [
 			{ path: 'private/file/path', route: '/private_route', private: true },
 			{ path: 'hidden/file/path', route: '/hidden_route', hidden: true },
 			{ path: 'path/for/humans/only', route: '/nomap_route', nomap: true },
-			{ path: 'some_file_path', route: '/mapped' }
+			{ path: 'some_file_path', route: '/mapped' },
+			{ path: 'another_file_path', route: '/route/with/additions' }
+		],
 		],
 		...
 	}
 	
 The file is regenerated every time the server is restarted.
+
+### Navigation Menu
+
 
 ### 404 and 500 Error Pages
 

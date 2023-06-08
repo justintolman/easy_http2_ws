@@ -8,7 +8,7 @@ import {fileURLToPath} from 'url';
 import http from 'http';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __ehw_src = path.dirname(__filename);
 
 /*
  * An easy http/2 server with automatic http/2 push.
@@ -47,13 +47,11 @@ export class ServerManager {
 			sitemap: false,
 			robots: false,
 			nav_menu: false,
-			login_page: 'login.html',
-			error_pages: true,
-			page_404: '404.html',
-			page_500: '500.html',
+			error_pages: true
 		}
 		// Override defaults with config
 		Object.assign(this.cfg, config);
+		if(!this.cfg.root) this.cfg.root = this.routes?.find(r => r.route === '/')|| 'public';
 		this._app = http2Express(express);
 		this._app.send500 = this.send500.bind(this);
 		let cfg = this.cfg;
@@ -62,6 +60,9 @@ export class ServerManager {
 
 		// CORS
 		if(cfg.cors) this.addCORS();
+
+		// Set up mapping if sitemap or nav_menu is enabled
+		if(cfg.nav_menu) this.setupMapping();
 
 		// Set up static routing
 		this.mapRoutes();
@@ -89,7 +90,6 @@ export class ServerManager {
 		let cors = await this.importCORSModule();
 		let cors_opts;
 		if(typeof this.cfg.cors === 'array') cors_opts = {origin: this.cfg.cors};
-		console.log('cors', cors, typeof cors_opts, (typeof cors_opts !== 'undefiend'), cors_opts);
 		this.app.use(cors(cors_opts));
 		let opts_str = this.cfg.cors||'';
 		if(typeof opts_str === 'array') opts_str = ' with options: ' + opts_str.toString();
@@ -109,16 +109,276 @@ export class ServerManager {
 	}
 
 	/*
+	 * Set up mapping for sitemap and nav menu.
+	 */
+	async setupMapping() {
+		this._mapTree = {
+			path: '/',
+			route: this.cfg.root||'public'
+		}
+		if(this.cfg.sitemap) this._siteMap = Object.assign({}, this._mapTree);
+	}
+
+	routeToTree(route) {
+		let tree = this._mapTree;
+		let ptr = tree;
+		let pathArr = route.path.split('/');
+		let toSiteMap;
+		if(route.hidden) return;
+		if( this.cfg.sitemap && !route.nomap && !route.nobots && !route.private ) toSiteMap = true;
+
+		pathArr.forEach( (p) => {
+			if(!ptr.hasOwnProperty(p)){
+				ptr[p] = {};
+				if(toSiteMap) ptr[p].path = p;
+			}
+			ptr = ptr[p];
+		});	
+		Object.assign(ptr, route);
+		if(toSiteMap) Object.assign(this._siteMap, route);
+	}
+
+	processSiteMap(sitemap_routes, root) {
+		let siteMap = {
+			declaration: {
+				attributes: {
+					version: '1.0',
+					encoding: 'UTF-8'
+				}
+			},
+			elements: [
+				{
+					type: 'urlset',
+					attributes: {
+						xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9'
+					},
+					elements: []
+				}
+			]
+		}
+		let urlset = siteMap.elements[0].elements;
+		let ths = this;
+		function addURL(route, path, last_modified, isDir = true) {
+			let mainpath = {
+				type: 'url',
+				elements: [
+					{
+						type: 'loc',
+						text: `https://${ths.cfg.domain}/${path}/`
+					}
+				]
+			}
+			// Add any values from this.cfg.sitemap_add
+			if(ths.cfg.sitemap_add) {
+				let add = ths.cfg.sitemap_add;
+				Object.keys(ths.cfg.sitemap_add).forEach( (k) => {
+					let addition = {
+						type: k,
+					}
+					if(typeof ths.cfg.sitemap_add[k] === 'string') addition.text = add[k];
+					//loop through elements of add[k]
+					for(entry in add[k]){
+						switch(entry) {
+							case '_attributes':
+								addition.attributes = add[k][entry];
+								break;
+							case '_text':
+								addition.text = add[k][entry];
+								break;
+							default:
+								addition[entry] = add[k][entry];
+						}
+					}
+				});
+			}
+			urlset.push(mainpath);
+			if(isDir){
+				//traverse the directory.
+				let files = fs.readdirSync(path, (err, files) => {
+					if(err) ths.app.log(err);
+					else files.forEach( (f) => {
+						let fpath = `${path}/${f}`;
+						let fstat = fs.stat(fpath, (err, stats) => {
+							if(err) ths.app.log(err);
+							else if(f === 'index.html') {
+								//add the last modified date to the mainpath
+								mainpath.elements.push({
+									type: 'lastmod',
+									text: stats.mtime.toISOString()
+								});
+							} else {
+								addURL(path.join(route, f), f_path, stats.mtime, stats.isDirectory());
+							}
+						});
+					});
+				});
+			} else {
+				mainpath.elements.push({
+					type: 'lastmod',
+					text: last_modified.toISOString()
+				});
+			}
+		}
+		sitemap_routes.forEach( (r) => addURL(r.route, path.join(root, r.path)));
+		//Convert the siteMap object to XML
+		let xml = this.xmlJs.js2xml(siteMap, {spaces: '\t'});
+		//Write the XML to the sitemap.xml file
+
+		let file_path = path.join(root,'sitemap.xml');
+
+		this.app.log('Attempting to write sitemap.xml to: ' + file_path);
+		fs.writeFile(file_path, robots, { flag: 'w+' }, (err) => {
+			if(err) console.error(err);
+			else this.app.log('sitemap.xml created');
+		});
+	}
+/*
+Media types
+
+Image
+jpg
+jpeg
+png
+gif
+svg
+webp
+bmp
+ico
+tiff
+
+Video
+mp4
+webm
+ogg
+
+
+
+*/
+
+
+	/*
+sitemap tags
+
+js
+{
+	_declaration: {
+		_attributes: {
+			version: '1.0',
+			encoding: 'UTF-8'
+		}
+	},
+	elements: [
+		type: 'urlset',
+		attributes: {
+			xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9'
+		}
+		elements: []
+	urlset: {
+		_attributes: {
+			xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9'
+		},
+		url: {
+			loc: 'https://example.com/sample2.html',
+			lastmod: '2022-06-04'
+		}
+}
+{
+	link: {
+		_attributes: {
+			rel: 'alternate',
+			href: 'https://example.com/',
+			hreflang: 'x-default'
+		}
+	}
+}
+<link rel="alternate" href="https://example.com/" hreflang="x-default" />
+
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+		xmlns:video="http://www.google.com/schemas/sitemap-video/1.1
+  <url>
+    <loc>https://example.com/sample2.html</loc>
+	<lastmod>2022-06-04</lastmod>
+    <image:image>
+      <image:loc>https://example.com/picture.jpg</image:loc>
+    </image:image>
+  </url>
+
+
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+  <url>
+    <loc>http://www.example.org/business/article55.html</loc>
+    <news:news>
+      <news:publication>
+        <news:name>The Example Times</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2008-12-23</news:publication_date>
+      <news:title>Companies A, B in Merger Talks</news:title>
+    </news:news>
+  </url>
+
+  
+     <video:video>
+       <video:thumbnail_loc>https://www.example.com/thumbs/123.jpg</video:thumbnail_loc>
+       <video:title>Grilling steaks for summer</video:title>
+       <video:description>
+         Alkis shows you how to get perfectly done steaks every time
+       </video:description>
+       <video:content_loc>
+          http://streamserver.example.com/video123.mp4
+       </video:content_loc>
+       <video:player_loc>
+         https://www.example.com/videoplayer.php?video=123
+       </video:player_loc>
+       <video:duration>600</video:duration>
+       <video:expiration_date>2021-11-05T19:20:30+08:00</video:expiration_date>
+       <video:rating>4.2</video:rating>
+       <video:view_count>12345</video:view_count>
+       <video:publication_date>2007-11-05T19:20:30+08:00</video:publication_date>
+       <video:family_friendly>yes</video:family_friendly>
+       <video:restriction relationship="allow">IE GB US CA</video:restriction>
+       <video:price currency="EUR">1.99</video:price>
+       <video:requires_subscription>yes</video:requires_subscription>
+       <video:uploader
+         info="https://www.example.com/users/grillymcgrillerson">GrillyMcGrillerson
+       </video:uploader>
+       <video:live>no</video:live>
+     </video:video>
+     <video:video>
+       <video:thumbnail_loc>https://www.example.com/thumbs/345.jpg</video:thumbnail_loc>
+       <video:title>Grilling steaks for winter</video:title>
+       <video:description>
+         In the freezing cold, Roman shows you how to get perfectly done steaks every time.
+       </video:description>
+       <video:content_loc>
+          http://streamserver.example.com/video345.mp4
+       </video:content_loc>
+       <video:player_loc>
+         https://www.example.com/videoplayer.php?video=345
+       </video:player_loc>
+     </video:video>
+
+	 <link rel="alternate" href="https://example.com/" hreflang="x-default" />
+	*/
+
+	/*
 	 * Set up routing based on config.
 	 * Also generates robots.txt if configured.
 	 */
-	mapRoutes() {
+	async mapRoutes() {
 		this.app.log('Mapping routes');
 		let root = this.cfg.root || 'public';
 		let cfg = this.cfg;
-		let mapFiles;
+		let robots, sitemap_routes, mapFiles;
 		if(cfg.routes?.length > 0){
-			if(this.cfg.robots) this._robots = 'User-agent: *\n';
+			if(cfg.robots || cfg.siteMap || cfg.mapFiles){
+				//import xml-js if needed
+				const { default: xjs } = await import('xml-js');
+				this.xmlJs = xjs;
+			}
+			if(this.cfg.robots) robots = 'User-agent: *\n';
 			cfg.routes?.forEach( async (r, i, arr) => {
 				//see if the CORS module needs to be loaded
 				if(r.cors) await this.importCORSModule();
@@ -127,10 +387,27 @@ export class ServerManager {
 					case r.hidden:
 					case r.nobots:
 					case r.private:
-						this._robots += 'Disallow: ' + r.route +'\n';
+						robots += 'Disallow: ' + r.route +'\n';
 						break;
 					default:
-						this._robots += 'Allow: ' + r.route +'\n';
+						robots += 'Allow: ' + r.route +'\n';
+				}
+				if(cfg.sitemap){
+					sitemap_routes= [];
+					switch(true){
+						case r.hidden:
+						case r.nobots:
+						case r.nomap:
+						case r.private:
+							break;
+						default:
+							sitemap_routes.push(r);
+							// Traverse
+					}
+				}
+				//Handlenav menu if enabled
+				if(this._mapTree) {
+					this.routeToTree(r);
 				}
 				if(r.route === '/') root = r.path;
 				//Handle private routes
@@ -147,23 +424,27 @@ export class ServerManager {
 		//Set up default route
 		if(cfg.routes?.find(r => r.route === '/') === undefined){
 			this.addStaticRoute(root);
-			if(cfg.robots) this._robots += 'Allow: /\n';
+			if(cfg.robots) robots += 'Allow: /\n';
 		}
 		
+		// Save robots.txt to the root directory if configured
 		if(cfg.robots){
 			cfg.nobots.forEach((r) => {
-				this._robots += 'Disallow: ' + r +'\n';
+				robots += 'Disallow: ' + r +'\n';
 			});
-
-			if(cfg.sitemap && cfg.domain) this._robots += '\nSitemap: https://' + cfg.domain + '/sitemap.xml\n';
+			//	Add sitemap reference if configured
+			if(cfg.sitemap && cfg.domain) robots += '\nSitemap: https://' + cfg.domain + '/sitemap.xml\n';
 			//Write robots.txt to the root directory
 			let file_path = path.join(root,'robots.txt')
 
 			this.app.log('Attempting to write robots.txt to: ' + file_path);
-			fs.writeFile(file_path, this._robots, { flag: 'w+' }, (err) => {
+			fs.writeFile(file_path, robots, { flag: 'w+' }, (err) => {
 				if(err) console.error(err);
+				else this.app.log('robots.txt created');
 			});
 		}
+
+		// if(cfg.sitemap) this.processSiteMap(sitemap_routes, root);
 	}
 
 	/*
@@ -187,9 +468,9 @@ export class ServerManager {
 		if(cors) {
 			let cors_opts;
 			if(typeof this.cfg.cors === 'array') cors_opts = {origin: this.cfg.cors};
-			this.app.use(route, this.app.corsModule(cors_opts), autopush(this.convertPath(path), staticOptions, assetCacheConfig));
+			this.app.use(route, this.app.corsModule(cors_opts), autopush(path, staticOptions, assetCacheConfig));
 		} else {
-			this.app.use(route, autopush(this.convertPath(path), staticOptions, assetCacheConfig));
+			this.app.use(route, autopush(path, staticOptions, assetCacheConfig));
 		}
 	}
 	
@@ -225,12 +506,12 @@ export class ServerManager {
 	 * The path to the module should be provided under auth_module the config.js file,
 	 * and should provide a default export as the entry point.
 	 */ 
-	async addPrivateRoute(route, f_path, staticOptions, assetCacheConfig, cors) {
+	async addPrivateRoute(route, f_path, staticOptions, assetCacheConfig, cors) {;
 		this.app.log(`Adding private route: ${route} for path: ${f_path}`);
 		let params = {
 			app: this.app,
 			config: this.cfg,
-			path: this.convertPath(f_path),
+			path: f_path,
 			autopush: autopush
 		}
 		let auth;
@@ -239,8 +520,12 @@ export class ServerManager {
 			auth = this._authHandler;
 		} else {
 			// Use a custom login page if provided
-			if(this.cfg.login_page) params.login_page = path.join(__dirname, this.cfg.login_page);
-			else params.login_page = path.join(__dirname, 'login.html');
+			
+			let file_path;
+			if(this.cfg.page_500) file_path = path.join(this.cfg.project_dir, this.cfg.root, this.cfg.page_500);
+			else file_path = path.join(__ehw_src, '500.html');
+			if(this.cfg.login_page) params.login_page = path.join(this.cfg.project_dir, this.cfg.root, this.cfg.login_page);
+			else params.login_page = path.join(__ehw_src, 'login.html');
 			// Use a custom authentication module if provided
 			let module = this.cfg.auth_module||'./AuthHandler.js';
 			// Make sure that the AuthHandler is only loaded once.
@@ -259,8 +544,8 @@ export class ServerManager {
 		this.redirect();
 		// Load SSL certs
 		try {
-			this.cfg.ssl.key_data = fs.readFileSync(this.convertPath(this.cfg.ssl.key));
-			this.cfg.ssl.cert_data = fs.readFileSync(this.convertPath(this.cfg.ssl.cert));
+			this.cfg.ssl.key_data = fs.readFileSync(path.join(this.cfg.project_dir, this.cfg.ssl.key));
+			this.cfg.ssl.cert_data = fs.readFileSync(path.join(this.cfg.project_dir, this.cfg.ssl.cert));
 			let server = http2.createSecureServer({
 				key: this.cfg.ssl.key_data,
 				cert: this.cfg.ssl.cert_data,
@@ -316,26 +601,26 @@ export class ServerManager {
 	}
 
 	// Convert path delimiters as appropriate for the operating system;
-	convertPath(pathStr) {
-		return path.join(pathStr.split(['/','\\']).join());
-	}
+	// convertPath(pathStr) {
+	// 	return path.join(pathStr.split(['/','\\']).join());
+	// }
 
 	
-	traverseDir = function(dirPath, dirArr) {
-		files = fs.readdirSync(dirPath);
+	// traverseDir = function(dirPath, dirArr) {
+	// 	files = fs.readdirSync(dirPath);
 
-		dirArr = dirArr || [];
+	// 	dirArr = dirArr || [];
 
-		files.forEach(function(file) {
-			if (fs.statSync(dirPath + "/" + file).isDirectory()) {
-				dirArr = getAllFiles(dirPath + "/" + file, dirArr);
-			} else {
-				dirArr.push(path.join(__dirname, dirPath, "/", file));
-			}
-		})
+	// 	files.forEach(function(file) {
+	// 		if (fs.statSync(dirPath + "/" + file).isDirectory()) {
+	// 			dirArr = getAllFiles(dirPath + "/" + file, dirArr);
+	// 		} else {
+	// 			dirArr.push(path.join(__ehw_src, dirPath, "/", file));
+	// 		}
+	// 	})
 
-		return dirArr
-	}
+	// 	return dirArr
+	// }
 
 	/*
 	 * Handle 404 and server errors
@@ -378,7 +663,8 @@ export class ServerManager {
 		});
 
 		// Route to test error page
-		this.app.get('/ehw_error_test', (req, res) => {
+		this.app.get('/ehw_500_test', (req, res) => {
+			console.log('Test error');
 			try {
 				throw new Error('Test error');
 			} catch (err) {
@@ -392,7 +678,9 @@ export class ServerManager {
 	 * Send 404 page on error
 	 */
 	send404(res, err) {
-		let file_path = path.join(__dirname,this.cfg.page_404);
+		let file_path;
+		if(this.cfg.page_404) file_path = path.join(this.cfg.project_dir, this.cfg.root, this.cfg.page_404);
+		else file_path = path.join(__ehw_src, '404.html');
 		this.app.log(`Sending error page: ${file_path}`);
 		res.status(404).sendFile(file_path);
 	}
@@ -401,7 +689,9 @@ export class ServerManager {
 	 * Send 500 page on error
 	 */
 	send500(res, err) {
-		let file_path = path.join(__dirname,this.cfg.page_500);
+		let file_path;
+		if(this.cfg.page_500) file_path = path.join(this.cfg.project_dir, this.cfg.root, this.cfg.page_500);
+		else file_path = path.join(__ehw_src, '500.html');
 		this.app.log(`Sending error page: ${file_path}`);
 		res.status(404).sendFile(file_path);
 	}
