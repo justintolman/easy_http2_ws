@@ -35,9 +35,9 @@ An easy http/2 server with automatic http/2 push intended for quick deployment o
 * Automatic robots.txt Generation
 * Default Error Responses (404 and 500.)
 * CORS
+* Automatic Sitemap Generation
 
 #### Unfinished
-* Automatic Sitemap Generation
 * Automatic nav menu generation
 
 ## Simple Usage
@@ -373,22 +373,20 @@ At this time it also will not support the image or video sitemap extensions. To 
 Routes that are marked with private, hidden, nobots, or nomap will not be listed in the sitemap.xml file.
 
 loc and lastmod values will be added automatically.
-You can add information to sitemap enntries using sitemap_add in config.js as shown below. The information will be added for the matching route. If you need to add much information here, you may be better off building your own sitemap.
+You can add information to sitemap enntries using sitemap_details in config.js as shown below. The information will be added for the matching route. If you need to add much information here, you may be better off building your own sitemap.
 
 	{
 		...
 		sitemap: true,
 		domain: 'yourdomain.com',
-		sitemap_add: {
+		sitemap_details: {
 			"/route/with/additions": {
 				changefreq: "monthly",
 				priority: "0.8",
 				link: {
-					_attributes: {
-						rel: 'alternate',
-						href: 'https://example.com/',
-						hreflang: 'x-default'
-					}
+					'@rel': 'alternate',
+					'@href': 'https://example.com/',
+					'@hreflang:' 'x-default'
 				}
 			},
 			"/another/route/with/additions": {

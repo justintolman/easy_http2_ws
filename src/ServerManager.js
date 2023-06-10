@@ -1,7 +1,7 @@
 import express from 'express';
 import http2Express from 'http2-express-bridge';
 import http2 from 'http2';
-import fs from 'fs';
+import * as fs from 'node:fs/promises';
 import autopush from 'http2-express-autopush';
 import path from 'path';
 import {fileURLToPath} from 'url';
@@ -51,7 +51,12 @@ export class ServerManager {
 		}
 		// Override defaults with config
 		Object.assign(this.cfg, config);
-		if(!this.cfg.root) this.cfg.root = this.routes?.find(r => r.route === '/')|| 'public';
+		// Set the root directory
+		this.root_dir;
+		if(this.cfg.routes) this.root_dir = this.routes?.find(r => r.route === '/');
+		this.root_from_routes = this.root_dir? true: false;
+		this.root_dir = this.root_dir || this.cfg.root || 'public';
+
 		this._app = http2Express(express);
 		this._app.send500 = this.send500.bind(this);
 		let cfg = this.cfg;
@@ -81,6 +86,10 @@ export class ServerManager {
 
 	get app() {
 		return this._app;
+	}
+
+	establishRoot() {
+		
 	}
 
 	/*
@@ -114,7 +123,7 @@ export class ServerManager {
 	async setupMapping() {
 		this._mapTree = {
 			path: '/',
-			route: this.cfg.root||'public'
+			route: this.root_dir
 		}
 		if(this.cfg.sitemap) this._siteMap = Object.assign({}, this._mapTree);
 	}
@@ -138,96 +147,56 @@ export class ServerManager {
 		if(toSiteMap) Object.assign(this._siteMap, route);
 	}
 
-	processSiteMap(sitemap_routes, root) {
+	async processSiteMap(sitemap_routes) {
 		let siteMap = {
-			declaration: {
-				attributes: {
-					version: '1.0',
-					encoding: 'UTF-8'
-				}
-			},
-			elements: [
-				{
-					type: 'urlset',
-					attributes: {
-						xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9'
-					},
-					elements: []
-				}
-			]
+			'?': 'xml version="1.0" encoding="UTF-8"',
+			urlset: {
+				'@xmlns': 'http://www.sitemaps.org/schemas/sitemap/0.9',
+				url: []
+			}
 		}
-		let urlset = siteMap.elements[0].elements;
-		let ths = this;
-		function addURL(route, path, last_modified, isDir = true) {
-			let mainpath = {
-				type: 'url',
-				elements: [
-					{
-						type: 'loc',
-						text: `https://${ths.cfg.domain}/${path}/`
-					}
-				]
-			}
-			// Add any values from this.cfg.sitemap_add
-			if(ths.cfg.sitemap_add) {
-				let add = ths.cfg.sitemap_add;
-				Object.keys(ths.cfg.sitemap_add).forEach( (k) => {
-					let addition = {
-						type: k,
-					}
-					if(typeof ths.cfg.sitemap_add[k] === 'string') addition.text = add[k];
-					//loop through elements of add[k]
-					for(entry in add[k]){
-						switch(entry) {
-							case '_attributes':
-								addition.attributes = add[k][entry];
-								break;
-							case '_text':
-								addition.text = add[k][entry];
-								break;
-							default:
-								addition[entry] = add[k][entry];
-						}
-					}
-				});
-			}
-			urlset.push(mainpath);
-			if(isDir){
-				//traverse the directory.
-				let files = fs.readdirSync(path, (err, files) => {
-					if(err) ths.app.log(err);
-					else files.forEach( (f) => {
-						let fpath = `${path}/${f}`;
-						let fstat = fs.stat(fpath, (err, stats) => {
-							if(err) ths.app.log(err);
-							else if(f === 'index.html') {
-								//add the last modified date to the mainpath
-								mainpath.elements.push({
-									type: 'lastmod',
-									text: stats.mtime.toISOString()
-								});
-							} else {
-								addURL(path.join(route, f), f_path, stats.mtime, stats.isDirectory());
-							}
-						});
-					});
-				});
+		let urls = siteMap.urlset.url;
+		let $this = this;
+		async function addURL(route, f_path) {
+			let stats = await fs.stat(f_path);
+			if(stats.isDirectory()) {
+				// If this is a directory traverse it.
+				let files = await fs.readdir(f_path);
+				// Remove hidden files
+				files = files.filter( (f) => !f.startsWith('.'));
+				for await (let f of files) await addURL(path.join(route, f), path.join(f_path,f));
 			} else {
-				mainpath.elements.push({
-					type: 'lastmod',
-					text: last_modified.toISOString()
-				});
+				let data = {
+					'loc': `https://${$this.cfg.domain}${encodeURI(route.replace('index.html',''))}`,
+					'lastmod': stats.mtime.toISOString()
+				}
+				// Add any values from this.cfg.sitemap_details
+				let det = $this.cfg.sitemap_details;
+				let rt = route.replace('/index.html','')||'/';
+				if(det.hasOwnProperty(rt)) Object.assign(data, det[rt]);
+				if(($this.cfg.sitemap && route === '/sitemap.xml')||($this.cfg.robots && route === '/robots.txt')) data.lastmod = new Date().toISOString();
+				urls.push(data);
 			}
 		}
-		sitemap_routes.forEach( (r) => addURL(r.route, path.join(root, r.path)));
+		// Add the routes to the siteMap object forEach doesn't work with async
+		for await (let r of sitemap_routes) {
+			await addURL(r.route, path.join(this.cfg.project_dir, r.path));
+		}
+
+		// Sort siteMap.urlset.url by loc
+		siteMap.urlset.url.sort( (a,b) => {
+			if(a.loc < b.loc) return -1;
+			if(a.loc > b.loc) return 1;
+			return 0;
+		});
+		
 		//Convert the siteMap object to XML
-		let xml = this.xmlJs.js2xml(siteMap, {spaces: '\t'});
+		let xml = this.toXML(siteMap, null, '\t');
+
 		//Write the XML to the sitemap.xml file
-
-		let file_path = path.join(root,'sitemap.xml');
-
+		let file_path = path.join(this.cfg.project_dir, this.root_dir, 'sitemap.xml');
 		this.app.log('Attempting to write sitemap.xml to: ' + file_path);
-		fs.writeFile(file_path, robots, { flag: 'w+' }, (err) => {
+		fs.writeFile(file_path, xml, { flag: 'w+' }, (err) => {
 			if(err) console.error(err);
 			else this.app.log('sitemap.xml created');
 		});
@@ -369,14 +338,24 @@ js
 	 */
 	async mapRoutes() {
 		this.app.log('Mapping routes');
-		let root = this.cfg.root || 'public';
+		let root = this.root_dir;
 		let cfg = this.cfg;
 		let robots, sitemap_routes, mapFiles;
+		if(cfg.sitemap) sitemap_routes = [];
+
+		//Set up default route
+		if(!this.root_from_routes){
+			this.addStaticRoute(root);
+			if(cfg.robots) robots += 'Allow: /\n';
+			if(cfg.sitemap) sitemap_routes.push({ route: '/', path: root });
+		}
+
+		//loop through routes from config
 		if(cfg.routes?.length > 0){
 			if(cfg.robots || cfg.siteMap || cfg.mapFiles){
-				//import xml-js if needed
-				const { default: xjs } = await import('xml-js');
-				this.xmlJs = xjs;
+				//import to-xml if needed
+				const { toXML } = await import('to-xml');
+				this.toXML = toXML;
 			}
 			if(this.cfg.robots) robots = 'User-agent: *\n';
 			cfg.routes?.forEach( async (r, i, arr) => {
@@ -393,7 +372,6 @@ js
 						robots += 'Allow: ' + r.route +'\n';
 				}
 				if(cfg.sitemap){
-					sitemap_routes= [];
 					switch(true){
 						case r.hidden:
 						case r.nobots:
@@ -405,11 +383,10 @@ js
 							// Traverse
 					}
 				}
-				//Handlenav menu if enabled
-				if(this._mapTree) {
-					this.routeToTree(r);
-				}
-				if(r.route === '/') root = r.path;
+				//Handle nav menu if enabled
+				// if(this._mapTree) {
+				// 	this.routeToTree(r);
+				// }
 				//Handle private routes
 				if(r.private) {
 					this.addPrivateRoute(r.route, r.path, r.options, r.push_config, r.cors);
@@ -421,12 +398,6 @@ js
 			});
 		}
 
-		//Set up default route
-		if(cfg.routes?.find(r => r.route === '/') === undefined){
-			this.addStaticRoute(root);
-			if(cfg.robots) robots += 'Allow: /\n';
-		}
-		
 		// Save robots.txt to the root directory if configured
 		if(cfg.robots){
 			cfg.nobots.forEach((r) => {
@@ -435,7 +406,7 @@ js
 			//	Add sitemap reference if configured
 			if(cfg.sitemap && cfg.domain) robots += '\nSitemap: https://' + cfg.domain + '/sitemap.xml\n';
 			//Write robots.txt to the root directory
-			let file_path = path.join(root,'robots.txt')
+			let file_path = path.join(this.cfg.project_dir, root, 'robots.txt')
 
 			this.app.log('Attempting to write robots.txt to: ' + file_path);
 			fs.writeFile(file_path, robots, { flag: 'w+' }, (err) => {
@@ -444,7 +415,7 @@ js
 			});
 		}
 
-		// if(cfg.sitemap) this.processSiteMap(sitemap_routes, root);
+		if(cfg.sitemap) this.processSiteMap(sitemap_routes);
 	}
 
 	/*
@@ -522,9 +493,9 @@ js
 			// Use a custom login page if provided
 			
 			let file_path;
-			if(this.cfg.page_500) file_path = path.join(this.cfg.project_dir, this.cfg.root, this.cfg.page_500);
+			if(this.cfg.page_500) file_path = path.join(this.cfg.project_dir, this.root_dir, this.cfg.page_500);
 			else file_path = path.join(__ehw_src, '500.html');
-			if(this.cfg.login_page) params.login_page = path.join(this.cfg.project_dir, this.cfg.root, this.cfg.login_page);
+			if(this.cfg.login_page) params.login_page = path.join(this.cfg.project_dir, this.root_dir, this.cfg.login_page);
 			else params.login_page = path.join(__ehw_src, 'login.html');
 			// Use a custom authentication module if provided
 			let module = this.cfg.auth_module||'./AuthHandler.js';
@@ -544,8 +515,8 @@ js
 		this.redirect();
 		// Load SSL certs
 		try {
-			this.cfg.ssl.key_data = fs.readFileSync(path.join(this.cfg.project_dir, this.cfg.ssl.key));
-			this.cfg.ssl.cert_data = fs.readFileSync(path.join(this.cfg.project_dir, this.cfg.ssl.cert));
+			this.cfg.ssl.key_data = await fs.readFile(path.join(this.cfg.project_dir, this.cfg.ssl.key));
+			this.cfg.ssl.cert_data = await fs.readFile(path.join(this.cfg.project_dir, this.cfg.ssl.cert));
 			let server = http2.createSecureServer({
 				key: this.cfg.ssl.key_data,
 				cert: this.cfg.ssl.cert_data,
@@ -664,7 +635,6 @@ js
 
 		// Route to test error page
 		this.app.get('/ehw_500_test', (req, res) => {
-			console.log('Test error');
 			try {
 				throw new Error('Test error');
 			} catch (err) {
@@ -679,7 +649,7 @@ js
 	 */
 	send404(res, err) {
 		let file_path;
-		if(this.cfg.page_404) file_path = path.join(this.cfg.project_dir, this.cfg.root, this.cfg.page_404);
+		if(this.cfg.page_404) file_path = path.join(this.cfg.project_dir, this.root_dir, this.cfg.page_404);
 		else file_path = path.join(__ehw_src, '404.html');
 		this.app.log(`Sending error page: ${file_path}`);
 		res.status(404).sendFile(file_path);
@@ -690,7 +660,7 @@ js
 	 */
 	send500(res, err) {
 		let file_path;
-		if(this.cfg.page_500) file_path = path.join(this.cfg.project_dir, this.cfg.root, this.cfg.page_500);
+		if(this.cfg.page_500) file_path = path.join(this.cfg.project_dir, this.root_dir, this.cfg.page_500);
 		else file_path = path.join(__ehw_src, '500.html');
 		this.app.log(`Sending error page: ${file_path}`);
 		res.status(404).sendFile(file_path);
