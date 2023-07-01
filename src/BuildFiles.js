@@ -108,7 +108,7 @@ export class BuildFiles {
 		}
 		 console.log(r_data, 'hidden: ', r_data.hidden)
 		if(r_data.hidden) return;
-		if(r_data.hidden) console.log('Hidden: ' + route)
+		console.log('Not: ' + r_data)
 		if(!(this._templates || cfg.sitemap)) return;
 		let stats = await fs.stat(r_data.path);
 		r_data.lastmod = stats.mtime;
