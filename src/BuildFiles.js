@@ -106,6 +106,8 @@ export class BuildFiles {
 			default:
 				this.robots += 'Allow: ' + route +'\n';
 		}
+		if(r_data.hidden) return;
+		if(r_data.hidden) console.log('Hidden: ' + route)
 		if(!(this._templates || cfg.sitemap)) return;
 		let stats = await fs.stat(r_data.path);
 		r_data.lastmod = stats.mtime;
