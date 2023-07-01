@@ -351,6 +351,7 @@ export class BuildFiles {
 	}
 
 	_addSiteMapURL(r_data){
+		console.log('Adding sitemap url: ', r_data);
 		let idx = r_data?.options?.index || 'index.html';
 		let abs = path.join('https://', this.cfg.domain, encodeURI(r_data.route));
 		let loc = abs.replace(idx, '');
