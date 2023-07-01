@@ -6,6 +6,7 @@ import autopush from 'http2-express-autopush';
 import path from 'path';
 import {fileURLToPath} from 'url';
 import http from 'http';
+// import BuildFiles from './BuildFiles.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __ehw_src = path.dirname(__filename);
@@ -52,7 +53,6 @@ export class ServerManager {
 		// Override defaults with config
 		Object.assign(this.cfg, config);
 		// Set the root directory
-		this.root_dir;
 		if(this.cfg.routes) this.root_dir = this.routes?.find(r => r.route === '/');
 		this.root_from_routes = this.root_dir? true: false;
 		this.root_dir = this.root_dir || this.cfg.root || 'public';
@@ -65,9 +65,6 @@ export class ServerManager {
 
 		// CORS
 		if(cfg.cors) this.addCORS();
-
-		// Set up mapping if sitemap or nav_menu is enabled
-		if(cfg.nav_menu) this.setupMapping();
 
 		// Set up static routing
 		this.mapRoutes();
@@ -86,10 +83,6 @@ export class ServerManager {
 
 	get app() {
 		return this._app;
-	}
-
-	establishRoot() {
-		
 	}
 
 	/*
@@ -118,221 +111,6 @@ export class ServerManager {
 	}
 
 	/*
-	 * Set up mapping for sitemap and nav menu.
-	 */
-	async setupMapping() {
-		this._mapTree = {
-			path: '/',
-			route: this.root_dir
-		}
-		if(this.cfg.sitemap) this._siteMap = Object.assign({}, this._mapTree);
-	}
-
-	routeToTree(route) {
-		let tree = this._mapTree;
-		let ptr = tree;
-		let pathArr = route.path.split('/');
-		let toSiteMap;
-		if(route.hidden) return;
-		if( this.cfg.sitemap && !route.nomap && !route.nobots && !route.private ) toSiteMap = true;
-
-		pathArr.forEach( (p) => {
-			if(!ptr.hasOwnProperty(p)){
-				ptr[p] = {};
-				if(toSiteMap) ptr[p].path = p;
-			}
-			ptr = ptr[p];
-		});	
-		Object.assign(ptr, route);
-		if(toSiteMap) Object.assign(this._siteMap, route);
-	}
-
-	async processSiteMap(sitemap_routes) {
-		let siteMap = {
-			'?': 'xml version="1.0" encoding="UTF-8"',
-			urlset: {
-				'@xmlns': 'http://www.sitemaps.org/schemas/sitemap/0.9',
-				url: []
-			}
-		}
-		let urls = siteMap.urlset.url;
-		let $this = this;
-		async function addURL(route, f_path) {
-			let stats = await fs.stat(f_path);
-			if(stats.isDirectory()) {
-				// If this is a directory traverse it.
-				let files = await fs.readdir(f_path);
-				// Remove hidden files
-				files = files.filter( (f) => !f.startsWith('.'));
-				for await (let f of files) await addURL(path.join(route, f), path.join(f_path,f));
-			} else {
-				let data = {
-					'loc': `https://${$this.cfg.domain}${encodeURI(route.replace('index.html',''))}`,
-					'lastmod': stats.mtime.toISOString()
-				}
-				// Add any values from this.cfg.sitemap_details
-				let det = $this.cfg.sitemap_details;
-				let rt = route.replace('/index.html','')||'/';
-				if(det.hasOwnProperty(rt)) Object.assign(data, det[rt]);
-				if(($this.cfg.sitemap && route === '/sitemap.xml')||($this.cfg.robots && route === '/robots.txt')) data.lastmod = new Date().toISOString();
-				urls.push(data);
-			}
-		}
-		// Add the routes to the siteMap object forEach doesn't work with async
-		for await (let r of sitemap_routes) {
-			await addURL(r.route, path.join(this.cfg.project_dir, r.path));
-		}
-
-		// Sort siteMap.urlset.url by loc
-		siteMap.urlset.url.sort( (a,b) => {
-			if(a.loc < b.loc) return -1;
-			if(a.loc > b.loc) return 1;
-			return 0;
-		});
-		
-		//Convert the siteMap object to XML
-		let xml = this.toXML(siteMap, null, '\t');
-
-		//Write the XML to the sitemap.xml file
-		let file_path = path.join(this.cfg.project_dir, this.root_dir, 'sitemap.xml');
-		this.app.log('Attempting to write sitemap.xml to: ' + file_path);
-		fs.writeFile(file_path, xml, { flag: 'w+' }, (err) => {
-			if(err) console.error(err);
-			else this.app.log('sitemap.xml created');
-		});
-	}
-/*
-Media types
-
-Image
-jpg
-jpeg
-png
-gif
-svg
-webp
-bmp
-ico
-tiff
-
-Video
-mp4
-webm
-ogg
-
-
-
-*/
-
-
-	/*
-sitemap tags
-
-js
-{
-	_declaration: {
-		_attributes: {
-			version: '1.0',
-			encoding: 'UTF-8'
-		}
-	},
-	elements: [
-		type: 'urlset',
-		attributes: {
-			xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9'
-		}
-		elements: []
-	urlset: {
-		_attributes: {
-			xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9'
-		},
-		url: {
-			loc: 'https://example.com/sample2.html',
-			lastmod: '2022-06-04'
-		}
-}
-{
-	link: {
-		_attributes: {
-			rel: 'alternate',
-			href: 'https://example.com/',
-			hreflang: 'x-default'
-		}
-	}
-}
-<link rel="alternate" href="https://example.com/" hreflang="x-default" />
-
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
-		xmlns:video="http://www.google.com/schemas/sitemap-video/1.1
-  <url>
-    <loc>https://example.com/sample2.html</loc>
-	<lastmod>2022-06-04</lastmod>
-    <image:image>
-      <image:loc>https://example.com/picture.jpg</image:loc>
-    </image:image>
-  </url>
-
-
-        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
-  <url>
-    <loc>http://www.example.org/business/article55.html</loc>
-    <news:news>
-      <news:publication>
-        <news:name>The Example Times</news:name>
-        <news:language>en</news:language>
-      </news:publication>
-      <news:publication_date>2008-12-23</news:publication_date>
-      <news:title>Companies A, B in Merger Talks</news:title>
-    </news:news>
-  </url>
-
-  
-     <video:video>
-       <video:thumbnail_loc>https://www.example.com/thumbs/123.jpg</video:thumbnail_loc>
-       <video:title>Grilling steaks for summer</video:title>
-       <video:description>
-         Alkis shows you how to get perfectly done steaks every time
-       </video:description>
-       <video:content_loc>
-          http://streamserver.example.com/video123.mp4
-       </video:content_loc>
-       <video:player_loc>
-         https://www.example.com/videoplayer.php?video=123
-       </video:player_loc>
-       <video:duration>600</video:duration>
-       <video:expiration_date>2021-11-05T19:20:30+08:00</video:expiration_date>
-       <video:rating>4.2</video:rating>
-       <video:view_count>12345</video:view_count>
-       <video:publication_date>2007-11-05T19:20:30+08:00</video:publication_date>
-       <video:family_friendly>yes</video:family_friendly>
-       <video:restriction relationship="allow">IE GB US CA</video:restriction>
-       <video:price currency="EUR">1.99</video:price>
-       <video:requires_subscription>yes</video:requires_subscription>
-       <video:uploader
-         info="https://www.example.com/users/grillymcgrillerson">GrillyMcGrillerson
-       </video:uploader>
-       <video:live>no</video:live>
-     </video:video>
-     <video:video>
-       <video:thumbnail_loc>https://www.example.com/thumbs/345.jpg</video:thumbnail_loc>
-       <video:title>Grilling steaks for winter</video:title>
-       <video:description>
-         In the freezing cold, Roman shows you how to get perfectly done steaks every time.
-       </video:description>
-       <video:content_loc>
-          http://streamserver.example.com/video345.mp4
-       </video:content_loc>
-       <video:player_loc>
-         https://www.example.com/videoplayer.php?video=345
-       </video:player_loc>
-     </video:video>
-
-	 <link rel="alternate" href="https://example.com/" hreflang="x-default" />
-	*/
-
-	/*
 	 * Set up routing based on config.
 	 * Also generates robots.txt if configured.
 	 */
@@ -340,53 +118,26 @@ js
 		this.app.log('Mapping routes');
 		let root = this.root_dir;
 		let cfg = this.cfg;
-		let robots, sitemap_routes, mapFiles;
-		if(cfg.sitemap) sitemap_routes = [];
-
+		let build = !!(cfg.sitemap || cfg.robots || cfg.nav_menu || cfg.templates);
+		let builder;
+		if(build){
+			let { BuildFiles } = await import('./BuildFiles.js');
+			builder = new BuildFiles(cfg, false);
+		}
 		//Set up default route
 		if(!this.root_from_routes){
 			this.addStaticRoute(root);
-			if(cfg.robots) robots += 'Allow: /\n';
-			if(cfg.sitemap) sitemap_routes.push({ route: '/', path: root });
+			if(build) await builder.defaultRoot(root);
 		}
 
 		//loop through routes from config
 		if(cfg.routes?.length > 0){
-			if(cfg.robots || cfg.siteMap || cfg.mapFiles){
-				//import to-xml if needed
-				const { toXML } = await import('to-xml');
-				this.toXML = toXML;
-			}
-			if(this.cfg.robots) robots = 'User-agent: *\n';
-			cfg.routes?.forEach( async (r, i, arr) => {
+			for await (let r of cfg.routes){
+			// cfg.routes?.forEach( async (r, i, arr) => {
 				//see if the CORS module needs to be loaded
 				if(r.cors) await this.importCORSModule();
-				//Handle robots.txt
-				if(cfg.robots)switch(true){
-					case r.hidden:
-					case r.nobots:
-					case r.private:
-						robots += 'Disallow: ' + r.route +'\n';
-						break;
-					default:
-						robots += 'Allow: ' + r.route +'\n';
-				}
-				if(cfg.sitemap){
-					switch(true){
-						case r.hidden:
-						case r.nobots:
-						case r.nomap:
-						case r.private:
-							break;
-						default:
-							sitemap_routes.push(r);
-							// Traverse
-					}
-				}
-				//Handle nav menu if enabled
-				// if(this._mapTree) {
-				// 	this.routeToTree(r);
-				// }
+				//Build files if needed
+				if(build) await builder.processRoute(r);
 				//Handle private routes
 				if(r.private) {
 					this.addPrivateRoute(r.route, r.path, r.options, r.push_config, r.cors);
@@ -395,27 +146,11 @@ js
 				else {
 					this.addStaticRoute(r.path, r.route, r.options, r.push_config, r.cors);
 				}
-			});
+			}
+			// });
 		}
-
-		// Save robots.txt to the root directory if configured
-		if(cfg.robots){
-			cfg.nobots.forEach((r) => {
-				robots += 'Disallow: ' + r +'\n';
-			});
-			//	Add sitemap reference if configured
-			if(cfg.sitemap && cfg.domain) robots += '\nSitemap: https://' + cfg.domain + '/sitemap.xml\n';
-			//Write robots.txt to the root directory
-			let file_path = path.join(this.cfg.project_dir, root, 'robots.txt')
-
-			this.app.log('Attempting to write robots.txt to: ' + file_path);
-			fs.writeFile(file_path, robots, { flag: 'w+' }, (err) => {
-				if(err) console.error(err);
-				else this.app.log('robots.txt created');
-			});
-		}
-
-		if(cfg.sitemap) this.processSiteMap(sitemap_routes);
+		// setTimeout(()=>{if(build) builder.finalize();}, 500);
+		if(build) builder.finalize();
 	}
 
 	/*

@@ -36,9 +36,13 @@ An easy http/2 server with automatic http/2 push intended for quick deployment o
 * Default Error Responses (404 and 500.)
 * CORS
 * Automatic Sitemap Generation
+* Automatic nav menu generation
+* Rudamentary templating
 
 #### Unfinished
-* Automatic nav menu generation
+
+### Kmown issues
+BuilsFiles.js generates incorrect sitemap and robots.txt files when run standalone, but works correctly when run from the server. (it looks like evenything in the root folder is missing. I suspect either incorrect async shenanigans, ot an issue with the calling of the default route function)
 
 ## Simple Usage
 Add easy-http-ws as a dependency for your project:
@@ -325,13 +329,24 @@ To enable cors on a per route basis, add a cors array to the route object in con
 		...
 	}
 
-In eiter cas you can restrict cors to specific origins by providing an array of origins instead of true.
+In eiter casc you can restrict cors to specific origins by providing an array of origins instead of true.
 
 	{
 		...
 		cors: ['http://example.com', 'http://example2.com'],
 		
 	}
+
+### Project Directory
+
+	Templating, robots.txt, sitemap.xml, and ehw-menu need to have the absolute path of the project directory set in config.js. This code snipet gives an easy way to do that.
+
+	{
+		...
+		project_dir: import.meta.url.replace('file://', '').split('/').slice(0, -1).join('/'),
+		...
+	}
+	
 
 ### Robots.txt
 
@@ -375,6 +390,8 @@ Routes that are marked with private, hidden, nobots, or nomap will not be listed
 loc and lastmod values will be added automatically.
 You can add information to sitemap enntries using sitemap_details in config.js as shown below. The information will be added for the matching route. If you need to add much information here, you may be better off building your own sitemap.
 
+You can exclude files from the sitemap by file extension by adding the extension to the hide_files array in config.js.
+
 	{
 		...
 		sitemap: true,
@@ -404,13 +421,49 @@ You can add information to sitemap enntries using sitemap_details in config.js a
 			{ path: 'some_file_path', route: '/mapped' },
 			{ path: 'another_file_path', route: '/route/with/additions' }
 		],
-		],
+		hide_files: ['.css', '.js', '.json'],
 		...
 	}
 	
 The file is regenerated every time the server is restarted.
 
 ### Navigation Menu
+
+To use the auto-generated navigation menu, set nav_menu to true in config,js. The script will follow the paths declared in config.js excluding those marked with hidden or nomenu. If a route is marked private, the enlement where it branches will be given the class, "private".
+
+	...
+	nav_menu: true,
+	...
+
+include <!--ehw-menu--> in a template or template base file in the location where you want the menu. The root tag of the resulting tree will be <ehw-menu id="ehw-menu-root"> you can make a WebComponent class or use css to control its look and behavior. It will also auto generate the file ehw_nav_map.html if it's not present. If you want to customize this file make an ehw_nav_map.z_part.html
+
+Note that using the menu will apply templates to all base template files (see templates below).
+
+(Implementing a system with something like a .menu.z_part or .zm_part extension is doable, but I don't currently feel like the benefits are worth the work.)
+
+### Temlates
+
+I included a very simple templating tool in order to include the auto generated navigation menu in your pages. It will also allow you to include other repetative pieces like headers and footers in your pages. With the exception of the navigation menu, it is not recursive, so you can't include a template in a template. (the navigation menu can be included in your othe templates since it is automatically generated.)
+
+The templating tool can be run at server startup, or as a standalone process, so you can rebuild the files within your existing roites without restarting the server. For perfomance it checks the last modified date of the template and only rebuilds the file if the template has been modified since the last time it was built. (The navigation menu overrides this and builds all the templates, since it could be present in any template.)
+
+To use this feature create a folder to keep all of your template parts and add the location to your config,js file then set temlate_dir to its location in your config,js file.
+
+	{
+		...
+		template_dir: './templates',
+		...
+	}
+
+Name your parts with .part in front of the file extesnstion (E.G. footer.part.html). place file templates in the folders where you want the resulting files to be created. Place a .z_part in front of the file extension for these files (E.G index.z_part.html, will result in index.html). Add tags with the base file name of the parts in HTML comments without spaces in the location where you want the parts to be included.
+
+	...
+	<footer>
+		<!--footer-->
+	</footer>
+	...
+
+Since the tags are in the same format as HTML comments, you can view your partial file in the browser.
 
 
 ### 404 and 500 Error Pages

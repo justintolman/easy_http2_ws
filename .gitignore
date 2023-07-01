@@ -112,3 +112,14 @@ server.js
 /public
 /dev
 /certs
+/alternate
+build-files.js
+standalonetest.html
+
+# build process
+/templates
+.part
+.z_part
+
+# Certs
+*.pem
