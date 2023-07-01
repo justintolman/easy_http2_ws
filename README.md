@@ -509,6 +509,8 @@ For example you vould put the following in your server script.
 
 This is an example of all of the available options in config.js. (Minus details for unimplemented robot.txt, sitemap, and menu.)
 
+TODO: Add details for robot.txt, sitemap, and menu.
+
 	{
 		ssl: {
 			key: 'path/to/key.pem',
