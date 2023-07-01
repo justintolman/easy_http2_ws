@@ -360,7 +360,7 @@ export class BuildFiles {
 		let det = this.cfg.sitemap_details;
 
 		let rt = r_data.route.replace('/'+idx,'')||'/';
-		if(det.hasOwnProperty(rt)) Object.assign(url, det[rt]);
+		if(det?.hasOwnProperty(rt)) Object.assign(url, det[rt]);
 		this._sitemap_urls.push(url);
 	}
 
