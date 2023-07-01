@@ -106,7 +106,7 @@ export class BuildFiles {
 			default:
 				this.robots += 'Allow: ' + route +'\n';
 		}
-		 console.log(r_data)
+		 console.log(r_data, r_data.hidden)
 		if(r_data.hidden) return;
 		if(r_data.hidden) console.log('Hidden: ' + route)
 		if(!(this._templates || cfg.sitemap)) return;
