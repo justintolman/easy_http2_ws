@@ -106,9 +106,6 @@ export class BuildFiles {
 			default:
 				this.robots += 'Allow: ' + route +'\n';
 		}
-		 console.log(r_data, 'hidden: ', r_data.hidden)
-		// if(r_data.hidden) return;
-		console.log('Not: ' + r_data)
 		if(!(this._templates || cfg.sitemap)) return;
 		let stats = await fs.stat(r_data.path);
 		r_data.lastmod = stats.mtime;
@@ -134,6 +131,7 @@ export class BuildFiles {
 					// Traverse
 			}
 		}
+		console.log(r_data, 'hidden: ', r_data.hidden)
 		await this.graft(r_data);
 	}
 
