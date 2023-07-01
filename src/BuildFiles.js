@@ -149,7 +149,7 @@ export class BuildFiles {
 		let cfg = this.cfg;
 		let robots = this.robots;
 		let root = this.root_dir;
-		cfg.nobots.forEach((r) => {
+		cfg?.nobots?.forEach((r) => {
 			robots += 'Disallow: ' + r +'\n';
 		});
 		//	Add sitemap reference if configured
