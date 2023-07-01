@@ -267,6 +267,7 @@ export class BuildFiles {
 			for await (let file of files){
 				// Filter out hidden files
 				if(file.startsWith('.')) continue;
+				if(r_data.hidden) continue;
 				if(cfg.hidden_files && file.match(new RegExp(`(${cfg.hidden_files.join('|')})$`))) continue;
 				let f_path = path.join(pth, file);
 				let stats = await fs.stat(f_path);
