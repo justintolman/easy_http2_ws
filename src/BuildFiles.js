@@ -43,7 +43,7 @@ export class BuildFiles {
 		if(cfg.nav_menu) {
 			this._menu_js = {
 				'ehw-menu': {
-					'@id': 'ehw-menu-root',
+					'@name': 'ehw-menu-root',
 					p:{
 						a: {
 							'@href': '/',
@@ -216,7 +216,7 @@ export class BuildFiles {
 					relative: `${node.relative||''}/${r}`,
 					route: `${node.route||''}/${r}`,
 				};
-				if(nav) next.nav = {'@id':(r==='/')?'ehw-home':'ehw-'+r, p:{'#':r}}
+				if(nav) next.nav = {'@name':(r==='/')?'ehw-home':'ehw-'+r, p:{'#':r}}
 				if(!node[r]){
 					if(!branched){
 						branched = true;
@@ -303,7 +303,7 @@ export class BuildFiles {
 					directories.push(file);
 					if(nav) {
 						if(!current_nav.div) current_nav.div = [];
-						let next_nav = {'@id': 'ehw-'+file, p: {'#': file}};
+						let next_nav = {'@name': 'ehw-'+file, p: {'#': file}};
 						data.nav = next_nav;
 						current_nav.div.push(next_nav);
 					}
@@ -367,11 +367,12 @@ export class BuildFiles {
 	async _processNavMenu(){
 		let menu = this._menu_js;
 		let xml = toXML(menu, null, '\t');
+		this._templates['ehw-menu'] = xml;
+		let list = this._templates['ehw-list'] = xml.replace('ehw-menu', 'ehw-list');
 		for (let key in this._templates) {
 			//replace menu matches within the template
-			this._templates[key] = this._templates[key].replace(new RegExp(`<!--ehw-menu-->`, 'g'), xml);
+			this._templates[key] = this._templates[key].replace(new RegExp(`<!--ehw-menu-->`, 'g'), xml).replace(new RegExp(`<!--ehw-list-->`, 'g'), list);
 		}
-		this._templates['ehw-menu'] = xml;
 	}
 
 	async _applyTemplates(){
@@ -392,10 +393,10 @@ export class BuildFiles {
 			await fs.writeFile(dest, data, { flag: 'w+' });
 		}
 		if(!this.cfg.nav_menu) return;
-		// Write ehw_nav_map.html if not present., this._templates['ehw-nav-map']
+		// Write ehw_nav_map.html if not present.
 		let nav_file = path.join(dir, root, 'ehw_nav_map.html');
 		let nav_exists = await fs.access(nav_file, fs.constants.F_OK).then( () => true).catch( () => false);
-		if(!nav_exists) await fs.writeFile(nav_file, this._templates['ehw-nav-map'], { flag: 'w+' });
+		if(!nav_exists) await fs.writeFile(nav_file, this._templates['ehw-list'], { flag: 'w+' });
 	}
 
 }

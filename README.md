@@ -39,8 +39,6 @@ An easy http/2 server with automatic http/2 push intended for quick deployment o
 * Automatic nav menu generation
 * Rudamentary templating
 
-#### Unfinished
-
 ### Kmown issues
 BuilsFiles.js generates incorrect sitemap and robots.txt files when run standalone, but works correctly when run from the server. (it looks like evenything in the root folder is missing. I suspect either incorrect async shenanigans, ot an issue with the calling of the default route function)
 
@@ -437,6 +435,8 @@ To use the auto-generated navigation menu, set nav_menu to true in config,js. Th
 
 include <!--ehw-menu--> in a template or template base file in the location where you want the menu. The root tag of the resulting tree will be <ehw-menu id="ehw-menu-root"> you can make a WebComponent class or use css to control its look and behavior. It will also auto generate the file ehw_nav_map.html if it's not present. If you want to customize this file make an ehw_nav_map.z_part.html
 
+I also added an <ehw-list> that replaces <!--ehw-list-->. It's the saas the menu version, But I wanted a list version that won't be transformed into a menu when I apply a WebComponent.
+
 Note that using the menu will apply templates to all base template files (see templates below).
 
 (Implementing a system with something like a .menu.z_part or .zm_part extension is doable, but I don't currently feel like the benefits are worth the work.)
@@ -487,7 +487,7 @@ To turn them off error page handling set error_pages to false in config.js.
 		...
 	}
 
-### Customisition with ServerManager.app
+### Customization with ServerManager.app
 
 You can access the express app for your own customisation by using the .app property of your ServerManager instance.
 For example you vould put the following in your server script.
