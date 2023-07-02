@@ -260,7 +260,7 @@ export class BuildFiles {
 		let cfg = this.cfg;
 		let current_nav = r_data.nav;
 		let idx = r_data?.options?.index||'index.html';
-		if(r_data.isDir && !r_data.hidden) {
+		if(r_data.isDir) {
 			let files = await fs.readdir(pth);
 			let final_files = [];
 			let directories = [];
