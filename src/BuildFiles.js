@@ -255,11 +255,12 @@ export class BuildFiles {
 		await this.traversePath(branch)
 	}
 
-	async traversePath(r_data) {
+	async traversePath(r_data) {;
+		if(r_data.hidden) return;
 		let pth = r_data.path;
 		let cfg = this.cfg;
 		let current_nav = r_data.nav;
-		let idx = r_data?.options?.index||'index.html';
+		let idx = r_data?.options?.index||'index.html'
 		if(r_data.isDir) {
 			let files = await fs.readdir(pth);
 			let final_files = [];
@@ -267,7 +268,6 @@ export class BuildFiles {
 			for await (let file of files){
 				// Filter out hidden files
 				if(file.startsWith('.')) continue;
-				if(r_data.hidden) continue;
 				if(cfg.hidden_files && file.match(new RegExp(`(${cfg.hidden_files.join('|')})$`))) continue;
 				let f_path = path.join(pth, file);
 				let stats = await fs.stat(f_path);
