@@ -131,7 +131,6 @@ export class BuildFiles {
 					// Traverse
 			}
 		}
-		console.log(r_data, 'hidden: ', r_data.hidden)
 		await this.graft(r_data);
 	}
 
@@ -266,7 +265,7 @@ export class BuildFiles {
 			for await (let file of files){
 				// Filter out hidden files
 				if(file.startsWith('.')) continue;
-				// if(r_data.hidden) continue;
+				if(r_data.hidden) continue;
 				if(cfg.hidden_files && file.match(new RegExp(`(${cfg.hidden_files.join('|')})$`))) continue;
 				let f_path = path.join(pth, file);
 				let stats = await fs.stat(f_path);
@@ -349,7 +348,6 @@ export class BuildFiles {
 	}
 
 	_addSiteMapURL(r_data){
-		console.log('Adding sitemap url: ', r_data);
 		let idx = r_data?.options?.index || 'index.html';
 		let abs = path.join('https://', this.cfg.domain, encodeURI(r_data.route));
 		let loc = abs.replace(idx, '');
