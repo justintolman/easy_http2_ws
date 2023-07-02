@@ -255,8 +255,10 @@ export class BuildFiles {
 		await this.traversePath(branch)
 	}
 
-	async traversePath(r_data) {;
+	async traversePath(r_data) {
+		console.log('traversePath', r_data.route);
 		if(r_data.hidden) return;
+		console.log('traversePath1', r_data.route);
 		let pth = r_data.path;
 		let cfg = this.cfg;
 		let current_nav = r_data.nav;
