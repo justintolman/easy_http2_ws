@@ -199,8 +199,7 @@ export class BuildFiles {
 		let route_arr = route.split('/');
 		let file;
 		let node = this._tree;
-		let nav = this.cfg.nav_menu;
-		let nav_pointer;
+		let nav = this.cfg.nav_menu && !r_data.hidden && !r_data.nomenu;
 		if(nav) node.nav = this._menu_js['ehw-menu'];
 		if(!r_data.isDir)file = route_arr.pop();
 		node.name = 'home';
@@ -267,6 +266,7 @@ export class BuildFiles {
 			for await (let file of files){
 				// Filter out hidden files
 				if(file.startsWith('.')) continue;
+				if(r_data.hidden) continue;
 				if(cfg.hidden_files && file.match(new RegExp(`(${cfg.hidden_files.join('|')})$`))) continue;
 				let f_path = path.join(pth, file);
 				let stats = await fs.stat(f_path);
