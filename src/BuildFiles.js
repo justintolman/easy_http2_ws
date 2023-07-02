@@ -256,14 +256,11 @@ export class BuildFiles {
 	}
 
 	async traversePath(r_data) {
-		console.log('traversePath', r_data.route);
-		if(r_data.hidden) return;
-		console.log('traversePath1', r_data.route);
 		let pth = r_data.path;
 		let cfg = this.cfg;
 		let current_nav = r_data.nav;
-		let idx = r_data?.options?.index||'index.html'
-		if(r_data.isDir) {
+		let idx = r_data?.options?.index||'index.html';
+		if(r_data.isDir && !r_data.hidden) {
 			let files = await fs.readdir(pth);
 			let final_files = [];
 			let directories = [];
