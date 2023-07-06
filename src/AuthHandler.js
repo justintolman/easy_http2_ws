@@ -63,13 +63,10 @@ export default class AuthHandler {
 
 	addRoute(route, path, staticOptions, assetCacheConfig, cors) {
 		this._log(`Adding route: ${route} at path: ${path}`);
-		if(cors) {
-			let cors_opts;
-			if(typeof this.cfg.cors === 'array') cors_opts = {origin: this.cfg.cors};
-			this.app.use(route, this.authenticate.bind(this), this.app.corsModule(cors_opts), this._autopush(path, staticOptions, assetCacheConfig));
-		} else {
-			this.app.use(route, this.authenticate.bind(this), this._autopush(path, staticOptions, assetCacheConfig));
-		}
+		let mods = [route, this.authenticate.bind(this)];
+		if(cors) mods.push(this.app.corsModule(cors_opts));
+		if(!route.nopush) mods.push(autopush(path, staticOptions, assetCacheConfig));
+		this.app.use(...mods);
 	}
 
 	authenticate(req, res, next) {

@@ -218,7 +218,9 @@ For custom routes use an array with the key "routes" in config.js.
 		...
 	}
 
-When the required features are turned on, the following options to limit acces are available:
+To turn off HTTP/2 auto-push set nopush to true.
+
+When the required features are turned on, the following options to limit access are available:
  * nobots: dissallowed to bots in robots.txt
  * nomap: not listed in sitemap.xml
  * hidden: not listed in sitemap.xml and disallows bots (no login)

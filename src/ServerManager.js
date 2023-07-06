@@ -171,13 +171,10 @@ export class ServerManager {
 	 */
 	addStaticRoute(path='public', route='/', staticOptions, assetCacheConfig, cors) {
 		this.app.log(`Added static route: ${route} for path: ${path}`);
-		if(cors) {
-			let cors_opts;
-			if(typeof this.cfg.cors === 'array') cors_opts = {origin: this.cfg.cors};
-			this.app.use(route, this.app.corsModule(cors_opts), autopush(path, staticOptions, assetCacheConfig));
-		} else {
-			this.app.use(route, autopush(path, staticOptions, assetCacheConfig));
-		}
+		let mods = [route];
+		if(cors) mods.push(this.app.corsModule(cors_opts));
+		if(!route.nopush) mods.push(autopush(path, staticOptions, assetCacheConfig));
+		this.app.use(...mods);
 	}
 	
 	/*
