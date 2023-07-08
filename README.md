@@ -429,13 +429,39 @@ The file is regenerated every time the server is restarted.
 
 ### Navigation Menu
 
-To use the auto-generated navigation menu, set nav_menu to true in config,js. The script will follow the paths declared in config.js excluding those marked with hidden or nomenu. If a route is marked private, the enlement where it branches will be given the class, "private".
+To use the auto-generated navigation menu, set navmenu to true in config,js. The script will follow the paths declared in config.js excluding those marked with hidden or nomenu. If a route is marked private, the enlement where it branches will be given the class, "private".
 
 	...
-	nav_menu: true,
+	navmenu: true,
 	...
 
 include <!--ehw-menu--> in a template or template base file in the location where you want the menu. The root tag of the resulting tree will be <ehw-menu id="ehw-menu-root"> you can make a WebComponent class or use css to control its look and behavior. It will also auto generate the file ehw_nav_map.html if it's not present. If you want to customize this file make an ehw_nav_map.z_part.html
+
+The output will be in the format below.
+
+	<nav-menu id="ehw-menu-root">
+		<p>text or link</p>
+		<ul class=folders>
+			...
+			<li>
+				<div>
+					<p>text or link</p>
+					<ul class=folders>
+						...
+					</ul>
+					<ul class=files>
+						...
+					</ul>
+				</div>
+			</li>
+			...
+		</ul>
+		<ul class=files>
+			...
+			<li><a href="url">name</a></li>
+			...
+		</ul>
+	</nav-menu>
 
 I also added an <ehw-list> that replaces <!--ehw-list-->. It's the saas the menu version, But I wanted a list version that won't be transformed into a menu when I apply a WebComponent.
 
@@ -531,7 +557,7 @@ TODO: Add details for robot.txt, sitemap, and menu.
 			'some/public/route/to/hide/from/bots',
 			'other/public/route/to/hide/from/bots'
 		],
-		nav_menu: true,
+		navmenu: true,
 		routes: [
 			{ path: 'some_file_path', route: '/route' },
 			{ path: 'other_file_path', route: '/other_route', options: { index: 'something.html' } },

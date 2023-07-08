@@ -39,8 +39,8 @@ export class BuildFiles {
 			}
 			this._sitemap_urls = this._sitemap.urlset.url;
 		}
-		if(cfg.nav_menu || cfg.template_dir) this._templates = {};
-		if(cfg.nav_menu) {
+		if(cfg.navmenu || cfg.template_dir) this._templates = {};
+		if(cfg.navmenu) {
 			this._menu_js = {
 				'ehw-menu': {
 					'@name': 'ehw-menu-root',
@@ -121,7 +121,7 @@ export class BuildFiles {
 					r_data.sitemap = true;
 			}
 		}
-		if(cfg.nav_menu){
+		if(cfg.navmenu){
 			switch(true){
 				case r_data.hidden:
 				case r_data.nomenu:
@@ -141,7 +141,7 @@ export class BuildFiles {
 		// Save robots.txt to the root directory if configured
 		if(cfg.robots) this.processRobots();
 		if(cfg.sitemap) await this.processSiteMap();
-		if(cfg.nav_menu) await this._processNavMenu();
+		if(cfg.navmenu) await this._processNavMenu();
 		if(this._templates) await this._applyTemplates();
 	}
 
@@ -198,7 +198,7 @@ export class BuildFiles {
 		let route_arr = route.split('/');
 		let file;
 		let node = this._tree;
-		let nav = this.cfg.nav_menu && !r_data.hidden && !r_data.nomenu;
+		let nav = this.cfg.navmenu && !r_data.hidden && !r_data.nomenu;
 		if(nav) node.nav = this._menu_js['ehw-menu'];
 		if(!r_data.isDir)file = route_arr.pop();
 		node.name = 'home';
@@ -228,10 +228,9 @@ export class BuildFiles {
 			}
 			if(!node.dirs){
 				node.dirs = [];
-				if(nav)if(!node.nav.div) node.nav.div = [];
+				if(nav)if(!node.nav.ul) node.nav.ul = [{li:[next.nav], '@class': 'folders'}];
 			}
 			
-			node.nav.div.push(next.nav);
 			node.dirs.push(next);
 			node = next;
 		}
@@ -242,8 +241,14 @@ export class BuildFiles {
 			node.files.push(file);
 			if(nav){
 				if(!node.nav.ul) node.nav.ul = [];
-				node.nav.ul.push({'li': {'a': {'@href': r_data.route, '#': file.replace('.html','')}}});
+				node.nav.ul[1] = {'li': [{'a': {'@href': r_data.route, '#': file.replace('.html','')}}], '@class': 'files'};
 			}
+			// if(nav) {
+			// 	if(!current_nav.div) current_nav.div = [];
+			// 	let next_nav = {'@name': 'ehw-'+file, p: {'#': file}};
+			// 	data.nav = next_nav;
+			// 	current_nav.div.push(next_nav);
+			// }
 		}
 		let n_data = {...node, relative: '/'}
 		delete n_data.data;
@@ -286,11 +291,11 @@ export class BuildFiles {
 					branched: branched
 				};
 
-				let nav = this.cfg.nav_menu;
+				let nav = this.cfg.navmenu;
 
 				if(this._templates && file.includes('.z_part')) {
 					let target = file.replace('.z_part', '');
-					if(!cfg.nav_menu){
+					if(!cfg.navmenu){
 						// Filter out files that are older than the target (Only if a generated menu isn't being used.)
 						let final = final_files.find( (f) => f.file === target);
 						if(final) if(final.lastmod > stats.mtime) continue;
@@ -302,10 +307,11 @@ export class BuildFiles {
 				} else if(isDir) {
 					directories.push(file);
 					if(nav) {
-						if(!current_nav.div) current_nav.div = [];
+						if(!current_nav.ul) current_nav.ul = [];
 						let next_nav = {'@name': 'ehw-'+file, p: {'#': file}};
 						data.nav = next_nav;
-						current_nav.div.push(next_nav);
+						if(current_nav.ul[0]) current_nav.ul[0].li.push(next_nav);
+						else current_nav.ul[0] = {li:[next_nav], '@class': 'folders'};
 					}
 					this.traversePath(data);
 				} else {
@@ -318,8 +324,11 @@ export class BuildFiles {
 								current_nav.p = {'a': {'@href': r_data.route + '/', '#': ref}};
 							}
 						} else {
-							if(!current_nav.ul) current_nav.ul = {li:[]};
-							current_nav.ul.li.push({'a': {'@href': route, '#': name}});
+							if(!current_nav.ul) current_nav.ul = [];
+							if(current_nav.ul[1]) current_nav.ul[1].li.push({'a': {'@href': route, '#': name}});
+							else {
+								current_nav.ul[1] = {li:[{'a': {'@href': route, '#': name}}], '@class': 'files'}
+							}
 						}
 					}
 				}
@@ -392,7 +401,7 @@ export class BuildFiles {
 			await fs.mkdir(dest_dir, { recursive: true });
 			await fs.writeFile(dest, data, { flag: 'w+' });
 		}
-		if(!this.cfg.nav_menu) return;
+		if(!this.cfg.navmenu) return;
 		// Write ehw_nav_map.html if not present.
 		let nav_file = path.join(dir, root, 'ehw_nav_map.html');
 		let nav_exists = await fs.access(nav_file, fs.constants.F_OK).then( () => true).catch( () => false);

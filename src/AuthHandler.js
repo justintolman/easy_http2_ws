@@ -65,7 +65,7 @@ export default class AuthHandler {
 		this._log(`Adding route: ${route} at path: ${path}`);
 		let mods = [route, this.authenticate.bind(this)];
 		if(cors) mods.push(this.app.corsModule(cors_opts));
-		if(!route.nopush) mods.push(autopush(path, staticOptions, assetCacheConfig));
+		if(!route.nopush) mods.push(this._autopush(path, staticOptions, assetCacheConfig));
 		this.app.use(...mods);
 	}
 

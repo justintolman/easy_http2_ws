@@ -47,7 +47,7 @@ export class ServerManager {
 			ws_port: false,
 			sitemap: false,
 			robots: false,
-			nav_menu: false,
+			navmenu: false,
 			error_pages: true
 		}
 		// Override defaults with config
@@ -118,7 +118,7 @@ export class ServerManager {
 		this.app.log('Mapping routes');
 		let root = this.root_dir;
 		let cfg = this.cfg;
-		let build = !!(cfg.sitemap || cfg.robots || cfg.nav_menu || cfg.templates);
+		let build = !!(cfg.sitemap || cfg.robots || cfg.navmenu || cfg.templates);
 		let builder;
 		if(build){
 			let { BuildFiles } = await import('./BuildFiles.js');

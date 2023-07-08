@@ -12,7 +12,7 @@ export default {
 	websocket: false,
 	sitemap: false,
 	robots: false,
-	nav_menu: false,
+	navmenu: false,
 	root: 'root_file_path',
 	routes: [
 		{ path: 'some_file_path', route: '/route' },
