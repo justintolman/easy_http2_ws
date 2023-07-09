@@ -382,7 +382,7 @@ export class BuildFiles {
 			//replace menu matches within the template
 			this._templates[key] = this._templates[key].replace(new RegExp(`<!--ehw-menu-->`, 'g'), xml).replace(new RegExp(`<!--ehw-list-->`, 'g'), list);
 		}
-		this._templates['ehw-jsmenu'] = `export EHWMenu ${JSON.stringify(menu, null, '\t')}`;
+		this._templates['ehw-jsmenu'] = `export const EHWMenu ${JSON.stringify(menu, null, '\t')}`;
 	}
 
 	async _applyTemplates(){
