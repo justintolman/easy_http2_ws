@@ -5,12 +5,15 @@ An easy http/2 server with automatic http/2 push intended for quick deployment o
 
 * The only mandatory configuration is the inclustion of SSL certs. in the format
 
-	{
-		ssl{
-			cert:'<path>.fullchain.pem',
-			key:'<path>.privkey.pem'
+
+		{
+			ssl{
+
+				cert:'<;path>.fullchain.pem',
+				key:'<path>.privkey.pem'
+			}
 		}
-	}
+
 
 * All configuration can be done in the config.js file.
 * The server will default to serving only static files (with gzip, deflate, br compression) from the public folder on port 443.
@@ -374,7 +377,7 @@ Your site,ap will only be listed in your robots.txt file if you turn on sitemap 
 		...
 	}
 
-Note: If you need to use prevent search engines from indexing a page with noindex, the easiest way to do so with this setup is to add the meta tag <meta name="robots" content="noindex"> to that page. robots.txt just prevents the search engine from crawling the page. pages that are linked to from other websites may still be indexed, while noindex will prevent the page from being indexed at all.
+Note: If you need to use prevent search engines from indexing a page with noindex, the easiest way to do so with this setup is to add the meta tag &lt;meta name="robots" content="noindex"> to that page. robots.txt just prevents the search engine from crawling the page. pages that are linked to from other websites may still be indexed, while noindex will prevent the page from being indexed at all.
 
 The file is regenerated every time the server is restarted.
 
@@ -435,7 +438,7 @@ To use the auto-generated navigation menu, set navmenu to true in config,js. The
 	navmenu: true,
 	...
 
-include <!--ehw-menu--> in a template or template base file in the location where you want the menu. The root tag of the resulting tree will be <ehw-menu id="ehw-menu-root"> you can make a WebComponent class or use css to control its look and behavior. It will also auto generate the file ehw_nav_map.html if it's not present. If you want to customize this file make an ehw_nav_map.z_part.html
+include &lt;!--ehw-menu--> in a template or template base file in the location where you want the menu. The root tag of the resulting tree will be &lt;ehw-menu id="ehw-menu-root"> you can make a WebComponent class or use css to control its look and behavior. It will also auto generate the file ehw_nav_map.html if it's not present. If you want to customize this file make an ehw_nav_map.z_part.html A Javascript module version can be added with &lt;!--ehw-jsmenu==>.
 
 The output will be in the format below.
 
@@ -463,13 +466,171 @@ The output will be in the format below.
 		</ul>
 	</nav-menu>
 
-I also added an <ehw-list> that replaces <!--ehw-list-->. It's the saas the menu version, But I wanted a list version that won't be transformed into a menu when I apply a WebComponent.
+Here an example of the css for a dropdown menu. (I'd reccomend a WebComponent for a more advanced menu, wisth something like this as a fallback for users with JavaScript turned off.)
+
+	/* Set the nav postition */
+	nav {
+		font-weight: bold;
+		position: relative;
+		display: grid;
+		grid-template: 1.5fr 1fr / 1fr;
+		align-items: center;
+		user-select: none;
+	}
+
+	/* Set manual links */
+	nav > div {
+		grid-row: 2;
+		display: flex;
+		justify-content: space-around;
+		flex-direction: row;
+	}
+
+	/* Link styles */
+	nav a {
+		text-decoration: none;
+		color: black;
+	}
+	nav a:visited {
+		text-decoration: none;
+		color: 
+		
+		#444444;
+	}
+
+	/* Menu variables */
+	ehw-menu {
+		--dropdown-width: 1in;
+		--dropdown-offset: calc(var(--dropdown-width) * 0.75);
+		--dropdown-bg-color: #cccccc;
+		--dropdown-border: 2px solid black;
+		--dropdown-home-offset: 0.5in;
+	}
+
+
+	/* Set ehw-menu styles */
+	ehw-menu {
+		position: absolute;
+		min-width:100%;
+		max-height: 66%;
+		top: 0.1in;
+		grid-row: 1;
+		z-index: 20;
+
+		display: flex;
+		flex-direction: row;
+		justify-content: space-around;
+	}
+
+	/* Set home link styles */
+	ehw-menu > p {
+		margin-left: var(--dropdown-home-offset);
+		margin-right: var(--dropdown-home-offset);
+	}
+
+
+	/* Set top level folder styles */
+	ehw-menu > ul.folders {
+		display: flex;
+		flex-direction: row;
+		flex-grow: 1;
+		justify-content: space-around;
+		align-items: start;
+
+		margin: 0;
+		background: transparent;
+		padding: 0;
+		left: var(--dropdown-width);
+	}
+
+	/* Set top level file dropdown styles */
+	ehw-menu > ul.files {
+		top: 0.2in;
+		left: var(--dropdown-home-offset);
+		position: absolute;
+		/* display: none; */
+		background-color: var(--dropdown-bg-color);
+	}
+	ehw-menu > ul {
+		padding: 0;
+	}
+	ehw-menu > ul > li {
+		padding: 0;
+		width: var(--dropdown-width);
+	}
+	ehw-menu p {
+		color: #888888;
+	}
+	ehw-menu > ul.files > li {
+		padding: 0.1in;
+	}
+
+	ehw-menu > ul.files > p {
+		margin: 0;
+		padding: 0;
+	}
+
+	/* Align dropdown elements */
+	ehw-menu ul {
+		padding: 0.2em;
+		background-color: var(--dropdown-bg-color);
+	}
+	ehw-menu ul ul.folders, ehw-menu ul ul.files:first-of-type  {
+		margin-top: -1em;
+	}
+	ehw-menu ul ul ul {
+		padding: 0.2em;
+		margin-left: var(--dropdown-offset);
+		width: var(--dropdown-width);
+	}
+	ehw-menu ul ul ul.folders {
+		position: relative;
+		margin-top: -1.5em;
+	}
+	ehw-menu ul ul ul.files:first-of-type {
+		margin-top: -1.5em;
+	}
+	ehw-menu ul ul ul.files {
+		position: absolute;
+	}
+	ehw-menu ul ul p {
+		margin: 0;
+	}
+
+	/* Remove bullets */
+	ehw-menu li {
+		list-style-type: none;
+		padding: 0.2em;
+		max-height: 1em;
+	}
+
+	/* Hover rules */
+	ehw-menu a:hover {
+		border-bottom: var(--dropdown-border);
+	}
+	ehw-menu a {
+		display:inline-block;
+		width: 100%;
+	}
+	ehw-menu ul.files:hover > li,
+	ehw-menu ul p:hover ~ ul,
+	ehw-menu li:hover > ul,
+	ehw-menu > p:hover ~ ul.files,
+	ehw-menu > ul.files:hover {
+		display: flex;
+		flex-direction: column;
+	}
+	ehw-menu ul {
+		display: none;
+	}
+
+I also added an &lt;ehw-list> that that used the tag &lt;!--ehw-list--> It's the same as the menu version, But I wanted a list version that won't be transformed into a menu when I apply a WebComponent.
 
 Note that using the menu will apply templates to all base template files (see templates below).
 
 (Implementing a system with something like a .menu.z_part or .zm_part extension is doable, but I don't currently feel like the benefits are worth the work.)
 
-### Temlates
+### Templates
 
 I included a very simple templating tool in order to include the auto generated navigation menu in your pages. It will also allow you to include other repetative pieces like headers and footers in your pages. With the exception of the navigation menu, it is not recursive, so you can't include a template in a template. (the navigation menu can be included in your othe templates since it is automatically generated.)
 
