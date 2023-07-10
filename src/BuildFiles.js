@@ -273,7 +273,8 @@ export class BuildFiles {
 			let a = {}
 			for (let attr in r_data){
 				if(attr === 'route') continue;
-				a['@'+ attr] = r_data[attr];
+				if(attr === '#') a[attr] = r_data[attr];
+				else a['@'+ attr] = r_data[attr];
 			}
 			node.nav.ul[1].li.push({'a': a});
 		}
@@ -403,7 +404,7 @@ export class BuildFiles {
 			//replace menu matches within the template
 			this._templates[key] = this._templates[key].replace(new RegExp(`<!--ehw-menu-->`, 'g'), xml).replace(new RegExp(`<!--ehw-list-->`, 'g'), list);
 		}
-		this._templates['ehw-jsmenu'] = `export const EHWMenu ${JSON.stringify(menu, null, '\t')}`;
+		this._templates['ehw-jsmenu'] = `export const EHWMenu = ${JSON.stringify(menu, null, '\t')}`;
 	}
 
 	async _applyTemplates(){
@@ -428,5 +429,10 @@ export class BuildFiles {
 		let nav_file = path.join(dir, root, 'ehw_nav_map.html');
 		let nav_exists = await fs.access(nav_file, fs.constants.F_OK).then( () => true).catch( () => false);
 		if(!nav_exists) await fs.writeFile(nav_file, this._templates['ehw-list'], { flag: 'w+' });
+	}
+	async addLinks(){
+		for await (let link of this.cfg.menu_links){
+			await this.graft(link);
+		}
 	}
 }
