@@ -140,6 +140,7 @@ export class BuildFiles {
 		let root = this.root_dir;
 		// Save robots.txt to the root directory if configured
 		if(cfg.robots) this.processRobots();
+		if(cfg.menu_links) await this.addLinks();
 		if(cfg.sitemap) await this.processSiteMap();
 		if(cfg.navmenu) await this._processNavMenu();
 		if(this._templates) await this._applyTemplates();
@@ -200,35 +201,45 @@ export class BuildFiles {
 		let node = this._tree;
 		let nav = this.cfg.navmenu && !r_data.hidden && !r_data.nomenu;
 		if(nav) node.nav = this._menu_js['ehw-menu'];
-		if(!r_data.isDir)file = route_arr.pop();
+		if(!r_data.isDir && r_data.path) file = route_arr.pop();
 		node.name = 'home';
 		let branched = false;
-		for(let r of route_arr){
+		for await (let r of route_arr){
 			let next;
 			if(!r) {
 				if(!node.relative) node.relative = '';
 				continue;
 			}
-			if(node[r]) next = node[r];
+			let existing = node?.dirs?.find(d => d.name === r);
+			if(existing)next = existing;
 			else {
 				next = {
 					name: r,
 					relative: `${node.relative||''}/${r}`,
 					route: `${node.route||''}/${r}`,
 				};
-				if(nav) next.nav = {'@name':(r==='/')?'ehw-home':'ehw-'+r, p:{'#':r}}
-				if(!node[r]){
-					if(!branched){
-						branched = true;
-						next.branched = true;
-						next.data = r_data;
-						if(nav && r_data.private) next.nav['@class'] = 'private';
+				if(nav){
+					if(!node.nav)continue;
+					if(!node.nav.ul) node.nav.ul = [];
+					if(!node.nav.ul[0]) node.nav.ul[0]={li:[]};
+					let existing = await node.nav.ul[0].li.find(i => i['@name'] === 'ehw-'+r);
+					if(existing)next.nav = existing;
+					else {
+						next.nav = {'@name':(r==='/')?'ehw-home':'ehw-'+r, p:{'#':r}};
+						node.nav.ul[0].li.push(next.nav);
 					}
+				}
+
+				if(!branched){
+					branched = true;
+					next.branched = true;
+					next.data = r_data;
+					if(nav && r_data.private) next.nav['@class'] = 'private';
 				}
 			}
 			if(!node.dirs){
 				node.dirs = [];
-				if(nav)if(!node.nav.ul) node.nav.ul = [{li:[next.nav], '@class': 'folders'}];
+				// if(nav)if(!node.nav.ul) node.nav.ul = [{li:[next.nav], '@class': 'folders'}];
 			}
 			
 			node.dirs.push(next);
@@ -254,8 +265,18 @@ export class BuildFiles {
 		delete n_data.data;
 		delete n_data.files;
 		delete n_data.dirs;
-		let branch = {...r_data, ...n_data}
-		await this.traversePath(branch)
+		let branch = {...r_data, ...n_data};
+		if(r_data.path) await this.traversePath(branch);
+		else if(nav) {
+			if(!node.nav.ul) node.nav.ul = [];
+			if(!node.nav.ul[1]) node.nav.ul[1] = {'li': [], '@class': 'files linkonly'}
+			let a = {}
+			for (let attr in r_data){
+				if(attr === 'route') continue;
+				a['@'+ attr] = r_data[attr];
+			}
+			node.nav.ul[1].li.push({'a': a});
+		}
 	}
 
 	async traversePath(r_data) {
@@ -408,5 +429,4 @@ export class BuildFiles {
 		let nav_exists = await fs.access(nav_file, fs.constants.F_OK).then( () => true).catch( () => false);
 		if(!nav_exists) await fs.writeFile(nav_file, this._templates['ehw-list'], { flag: 'w+' });
 	}
-
 }

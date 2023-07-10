@@ -466,6 +466,20 @@ The output will be in the format below.
 		</ul>
 	</nav-menu>
 
+Additional arbitrary links can be added to with menu_links in config.js. unse the # symbol to indicate what goes inside the link tag. (Text or HTML) The resulting link will have any attributes that you specify.
+
+	{
+		...
+		menu_links: [
+			...
+			{route: '/altidx/index', href:'https://example.com', '#': 'extra'},
+			{route: '/altidx', href:'https://example.com/another', '#': 'extra', target: '_blank'},
+			{route: '/altidx/index/pdf', href:'https://example.com/pdf.pdfpdp', '#': 'pdf', download: 'filename'},
+			...
+		],
+		...
+	}
+
 Here an example of the css for a dropdown menu. (I'd reccomend a WebComponent for a more advanced menu, wisth something like this as a fallback for users with JavaScript turned off.)
 
 	/* Set the nav postition */
