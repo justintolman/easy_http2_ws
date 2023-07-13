@@ -466,7 +466,7 @@ The output will be in the format below.
 		</ul>
 	</nav-menu>
 
-Additional arbitrary links can be added to with menu_links in config.js. unse the # symbol to indicate what goes inside the link tag. (Text or HTML) The resulting link will have any attributes that you specify.
+Additional arbitrary links can be added to with menu_links in config.js. unse the # symbol to indicate what goes inside the link tag. (Currently text only.) The resulting link will have any attributes that you specify.
 
 	{
 		...
