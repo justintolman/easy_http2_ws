@@ -371,7 +371,10 @@ export class BuildFiles {
 				let rt_data = {file:file, path: f_path, isDir: isDir, route: route, lastmod: stats.mtime};
 			}
 			if(!cfg.drop_index && current_nav?.ul && current_nav?.ul[1] && current_nav?.ul[1].li.length === 1) {
-				current_nav.p = current_nav.ul[1].li[0];
+				let p = current_nav.p;
+				let ref = p['#'];
+				p = current_nav.ul[1].li[0];
+				p.a['#'] = ref;
 				if(current_nav.ul[0]) delete current_nav.ul[1];
 				else delete current_nav.ul;
 			}
