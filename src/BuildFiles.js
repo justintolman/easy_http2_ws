@@ -44,12 +44,15 @@ export class BuildFiles {
 			this._menu_js = {
 				'ehw-menu': {
 					'@name': 'ehw-menu-root',
-					p:{
+					p:'home',
+					ul:[
+						null,
+						{li:[{
 						a: {
 							'@href': '/',
 							'#': 'home'
-						}
-					}
+						}}]}
+					]
 				}
 			}
 		}
@@ -340,10 +343,19 @@ export class BuildFiles {
 					if(this.cfg.sitemap && r_data.sitemap) this._addSiteMapURL(data);
 					if(this._templates) final_files.push({file:file, path:f_path, isDir: isDir, route: route, lastmod: stats.mtime});
 					if(nav){
-						if(file === idx) {
-							let ref = current_nav.p['#'];
-							if(ref){
-								current_nav.p = {'a': {'@href': r_data.route + '/', '#': ref}};
+						if(file === idx){
+							if(cfg.drop_index) {
+								let ref = current_nav.p['#'];
+								if(ref){
+									current_nav.p = {'a': {'@href': route + '/', '#': ref}};
+								}
+							} else {
+								let ref = current_nav.p['#'];
+								if(!current_nav.ul) current_nav.ul = [];
+								if(current_nav.ul[1]) current_nav.ul[1].li.push({'a': {'@href': route + '/', '#': ref}});
+								else {
+									current_nav.ul[1] = {li:[{'a': {'@href': route, '#': name}}], '@class': 'files'}
+								}
 							}
 						} else {
 							if(!current_nav.ul) current_nav.ul = [];
@@ -357,6 +369,11 @@ export class BuildFiles {
 				let rt = pth.replace(this.cfg.project_dir, '');
 				if(isDir) rt += '/' + file;
 				let rt_data = {file:file, path: f_path, isDir: isDir, route: route, lastmod: stats.mtime};
+			}
+			if(!cfg.drop_index && current_nav?.ul && current_nav?.ul[1] && current_nav?.ul[1].li.length === 1) {
+				current_nav.p = current_nav.ul[1].li[0];
+				if(current_nav.ul[0]) delete current_nav.ul[1];
+				else delete current_nav.ul;
 			}
 		}
 		else {

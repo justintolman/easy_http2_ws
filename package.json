@@ -1,6 +1,6 @@
 {
   "name": "easy-http2-ws",
-  "version": "0.8.5",
+  "version": "0.8.6",
   "type": "module",
   "description": "An easy to deploy HTTP2 and WebSocket server with minimal configuration.",
   "main": "index.js",
