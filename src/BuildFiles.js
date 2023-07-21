@@ -336,15 +336,14 @@ export class BuildFiles {
 					if(this._templates) final_files.push({file:file, path:f_path, isDir: isDir, route: route, lastmod: stats.mtime});
 					if(nav){
 						if(file === idx){
+							let ref = current_nav.p['#']||current_nav.p;
 							if(cfg.drop_index) {
-								let ref = current_nav.p['#'];
 								if(ref){
 									current_nav.p = {'a': {'@href': route + '/', '#': ref}};
 								}
 							} else {
-								let ref = current_nav.p['#'];
 								if(!current_nav.ul) current_nav.ul = [];
-								if(current_nav.ul[1]) current_nav.ul[1].li.push({'a': {'@href': route + '/', '#': ref}});
+								if(current_nav.ul[1]) current_nav.ul[1].li.push({'a': {'@href': route.slice(0,-idx.length), '#': ref}});
 								else {
 									current_nav.ul[1] = {li:[{'a': {'@href': route, '#': name}}], '@class': 'files'}
 								}
@@ -364,9 +363,9 @@ export class BuildFiles {
 			}
 			if(!cfg.drop_index && current_nav?.ul && current_nav?.ul[1] && current_nav?.ul[1].li.length === 1) {
 				let p = current_nav.p;
-				let ref = p['#'];
-				p = current_nav.ul[1].li[0];
-				p.a['#'] = ref;
+				let ref = current_nav.p['#'];
+				current_nav.p = current_nav.ul[1].li[0];
+				current_nav.p.a['#'] = ref;
 				if(current_nav.ul[0]) delete current_nav.ul[1];
 				else delete current_nav.ul;
 			}
