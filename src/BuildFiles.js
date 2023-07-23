@@ -44,7 +44,7 @@ export class BuildFiles {
 			this._menu_js = {
 				'ehw-menu': {
 					'@name': 'ehw-menu-root',
-					p:'home'
+					p: {a:{'#':'home'}}
 				}
 			}
 		}
