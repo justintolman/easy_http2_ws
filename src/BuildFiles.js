@@ -2,6 +2,7 @@ import * as fs from 'node:fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { toXML } from 'to-xml';
+import { count } from 'node:console';
 // import { get } from 'node:http';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -44,7 +45,9 @@ export class BuildFiles {
 			this._menu_js = {
 				'ehw-menu': {
 					'@name': 'ehw-menu-root',
-					p:'home'
+					p:'home',
+					'@tabindex': '-1',
+					'@data-link-count':"0"
 				}
 			}
 		}
@@ -247,7 +250,8 @@ export class BuildFiles {
 			node.files.push(file);
 			if(nav){
 				if(!node.nav.ul) node.nav.ul = [];
-				node.nav.ul[1] = {'li': [{'a': {'@href': r_data.route, '#': file.replace('.html','')}}], '@class': 'files'};
+				this._menu_js['@data-link-count'] = this._menu_js['@data-link-count']++;
+				node.nav.ul[1] = {'li': [{'a': {'@href': r_data.route, '#': file.replace('.html',''), '@tabindex':this._menu_js['@data-link-count']+this.cfg.menu_tab_offset||1000}}], '@class': 'files'};
 			}
 			// if(nav) {
 			// 	if(!current_nav.div) current_nav.div = [];
@@ -325,7 +329,7 @@ export class BuildFiles {
 					directories.push(file);
 					if(nav) {
 						if(!current_nav.ul) current_nav.ul = [];
-						let next_nav = {'@name': 'ehw-'+file, p: {'#': file}};
+						let next_nav = {'@name': 'ehw-'+file, p: {'#': file, '@tabindex': -1'}};
 						data.nav = next_nav;
 						if(current_nav.ul[0]) current_nav.ul[0].li.push(next_nav);
 						else current_nav.ul[0] = {li:[next_nav], '@class': 'folders'};
@@ -339,20 +343,29 @@ export class BuildFiles {
 							let ref = current_nav.p['#']||current_nav.p;
 							if(cfg.drop_index) {
 								if(ref){
-									current_nav.p = {'a': {'@href': route + '/', '#': ref}};
+									this._menu_js['@data-link-count'] = this._menu_js['@data-link-count']++;
+									current_nav.p = {'a': {'@href': route + '/', '#': ref, '@tabindex':this._menu_js['@data-link-count']+this.cfg.menu_tab_offset||1000}};
 								}
 							} else {
 								if(!current_nav.ul) current_nav.ul = [];
-								if(current_nav.ul[1]) current_nav.ul[1].li.push({'a': {'@href': route.slice(0,-idx.length), '#': ref}});
+								if(current_nav.ul[1]){
+									this._menu_js['@data-link-count'] = this._menu_js['@data-link-count']++;
+									current_nav.ul[1].li.push({'a': {'@href': route.slice(0,-idx.length), '#': ref, '@tabindex':this._menu_js['@data-link-count']+this.cfg.menu_tab_offset||1000}});
+								}
 								else {
-									current_nav.ul[1] = {li:[{'a': {'@href': route, '#': name}}], '@class': 'files'}
+									this._menu_js['@data-link-count'] = this._menu_js['@data-link-count']++;
+									current_nav.ul[1] = {li:[{'a': {'@href': route, '#': name, '@tabindex':this._menu_js['@data-link-count']+this.cfg.menu_tab_offset||1000}}], '@class': 'files'}
 								}
 							}
 						} else {
 							if(!current_nav.ul) current_nav.ul = [];
-							if(current_nav.ul[1]) current_nav.ul[1].li.push({'a': {'@href': route, '#': name}});
+							if(current_nav.ul[1]){
+								this._menu_js['@data-link-count'] = this._menu_js['@data-link-count']++;
+								current_nav.ul[1].li.push({'a': {'@href': route, '#': name, '@tabindex':this._menu_js['@data-link-count']+this.cfg.menu_tab_offset||1000}});
+							}
 							else {
-								current_nav.ul[1] = {li:[{'a': {'@href': route, '#': name}}], '@class': 'files'}
+								this._menu_js['@data-link-count'] = this._menu_js['@data-link-count']++;
+								current_nav.ul[1] = {li:[{'a': {'@href': route, '#': name, '@tabindex':this._menu_js['@data-link-count']+this.cfg.menu_tab_offset||1000}}], '@class': 'files'}
 							}
 						}
 					}

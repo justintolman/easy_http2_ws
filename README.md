@@ -438,7 +438,7 @@ To use the auto-generated navigation menu, set navmenu to true in config,js. The
 	navmenu: true,
 	...
 
-include &lt;!--ehw-menu--> in a template or template base file in the location where you want the menu. The root tag of the resulting tree will be &lt;ehw-menu id="ehw-menu-root"> you can make a WebComponent class or use css to control its look and behavior. It will also auto generate the file ehw_nav_map.html if it's not present. If you want to customize this file make an ehw_nav_map.z_part.html A Javascript module version can be added with &lt;!--ehw-jsmenu==>. Strring the optional drop_index value to the config.js file will remove index links from the file list, and place the link in the folder name instead.
+include &lt;!--ehw-menu--> in a template or template base file in the location where you want the menu. The root tag of the resulting tree will be &lt;ehw-menu id="ehw-menu-root"> you can make a WebComponent class or use css to control its look and behavior. It will also auto generate the file ehw_nav_map.html if it's not present. If you want to customize this file make an ehw_nav_map.z_part.html A Javascript module version can be added with &lt;!--ehw-jsmenu==>. Strring the optional drop_index value to the config.js file will remove index links from the file list, and place the link in the folder name instead.  Anether optional value, menu_tab_offset can be used to set the starting point for the tab indecies of the menu.
 
 The output will be in the format below.
 
