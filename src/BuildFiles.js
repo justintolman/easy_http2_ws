@@ -329,7 +329,7 @@ export class BuildFiles {
 					directories.push(file);
 					if(nav) {
 						if(!current_nav.ul) current_nav.ul = [];
-						let next_nav = {'@name': 'ehw-'+file, p: {'#': file, '@tabindex': -1'}};
+						let next_nav = {'@name': 'ehw-'+file, p: {'#': file, '@tabindex': -1}};
 						data.nav = next_nav;
 						if(current_nav.ul[0]) current_nav.ul[0].li.push(next_nav);
 						else current_nav.ul[0] = {li:[next_nav], '@class': 'folders'};
