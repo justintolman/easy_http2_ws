@@ -2,7 +2,6 @@ import * as fs from 'node:fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { toXML } from 'to-xml';
-import { count } from 'node:console';
 // import { get } from 'node:http';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -42,14 +41,10 @@ export class BuildFiles {
 		}
 		if(cfg.navmenu || cfg.template_dir) this._templates = {};
 		if(cfg.navmenu) {
-			this._link_count = cfg.menu_tab_offset || 1000;
-			this._link_count++;
 			this._menu_js = {
 				'ehw-menu': {
 					'@name': 'ehw-menu-root',
-					// p:{a:{ '#':'home', '@href':'/', '@tabindex': this._link_count_link_count}},
-					p:'home',
-					'@tabindex': this._link_count_link_count,
+					p:'home'
 				}
 			}
 		}
@@ -225,8 +220,7 @@ export class BuildFiles {
 					let existing = await node.nav.ul[0].li.find(i => i['@name'] === 'ehw-'+r);
 					if(existing)next.nav = existing;
 					else {
-						this._link_count++;
-						next.nav = {'@name':(r==='/')?'ehw-home':'ehw-'+r, p:{'#':r, '@tabindex':this._link_count}};
+						next.nav = {'@name':(r==='/')?'ehw-home':'ehw-'+r, p:{'#':r}};
 						node.nav.ul[0].li.push(next.nav);
 					}
 				}
@@ -253,9 +247,7 @@ export class BuildFiles {
 			node.files.push(file);
 			if(nav){
 				if(!node.nav.ul) node.nav.ul = [];
-				this._link_count++;
-				console.log('link count', this._link_count);
-				node.nav.ul[1] = {'li': [{'a': {'@href': r_data.route, '#': file.replace('.html',''), '@tabindex':this._link_count}}], '@class': 'files'};
+				node.nav.ul[1] = {'li': [{'a': {'@href': r_data.route, '#': file.replace('.html','')}}], '@class': 'files'};
 			}
 			// if(nav) {
 			// 	if(!current_nav.div) current_nav.div = [];
@@ -333,9 +325,7 @@ export class BuildFiles {
 					directories.push(file);
 					if(nav) {
 						if(!current_nav.ul) current_nav.ul = [];
-						this._link_count++;
-						console.log('link count', this._link_count);
-						let next_nav = {'@name': 'ehw-'+file, p: {'#': file, '@tabindex': this._link_count_link_count}};
+						let next_nav = {'@name': 'ehw-'+file, p: {'#': file}};
 						data.nav = next_nav;
 						if(current_nav.ul[0]) current_nav.ul[0].li.push(next_nav);
 						else current_nav.ul[0] = {li:[next_nav], '@class': 'folders'};
@@ -349,34 +339,20 @@ export class BuildFiles {
 							let ref = current_nav.p['#']||current_nav.p;
 							if(cfg.drop_index) {
 								if(ref){
-									this._link_count++;
-									console.log('link count', this._link_count);
-									current_nav.p = {'a': {'@href': route + '/', '#': ref, '@tabindex':this._link_count}};
+									current_nav.p = {'a': {'@href': route + '/', '#': ref}};
 								}
 							} else {
 								if(!current_nav.ul) current_nav.ul = [];
-								if(current_nav.ul[1]){
-									this._link_count++;
-									console.log('link count', this._link_count);
-									current_nav.ul[1].li.push({'a': {'@href': route.slice(0,-idx.length), '#': ref, '@tabindex':this._link_count}});
-								}
+								if(current_nav.ul[1]) current_nav.ul[1].li.push({'a': {'@href': route.slice(0,-idx.length), '#': ref}});
 								else {
-									this._link_count++;
-									console.log('link count', this._link_count);
-									current_nav.ul[1] = {li:[{'a': {'@href': route, '#': name, '@tabindex':this._link_count}}], '@class': 'files'}
+									current_nav.ul[1] = {li:[{'a': {'@href': route, '#': name}}], '@class': 'files'}
 								}
 							}
 						} else {
 							if(!current_nav.ul) current_nav.ul = [];
-							if(current_nav.ul[1]){
-								this._link_count++;
-								console.log('link count', this._link_count);
-								current_nav.ul[1].li.push({'a': {'@href': route, '#': name, '@tabindex':this._link_count}});
-							}
+							if(current_nav.ul[1]) current_nav.ul[1].li.push({'a': {'@href': route, '#': name}});
 							else {
-								this._link_count++;
-								console.log('link count', this._link_count);
-								current_nav.ul[1] = {li:[{'a': {'@href': route, '#': name, '@tabindex':this._link_count}}], '@class': 'files'}
+								current_nav.ul[1] = {li:[{'a': {'@href': route, '#': name}}], '@class': 'files'}
 							}
 						}
 					}
@@ -432,6 +408,8 @@ export class BuildFiles {
 
 	async _processNavMenu(){
 		let menu = this._menu_js;
+		this._templates['ehw-jsmenu'] = `export const EHWMenu = ${JSON.stringify(menu, null, '\t')}`;
+		await this._addIndecies();
 		let xml = toXML(menu, null, '\t');
 		this._templates['ehw-menu'] = xml;
 		let list = this._templates['ehw-list'] = xml.replace('ehw-menu', 'ehw-list');
@@ -439,7 +417,24 @@ export class BuildFiles {
 			//replace menu matches within the template
 			this._templates[key] = this._templates[key].replace(new RegExp(`<!--ehw-menu-->`, 'g'), xml).replace(new RegExp(`<!--ehw-list-->`, 'g'), list);
 		}
-		this._templates['ehw-jsmenu'] = `export const EHWMenu = ${JSON.stringify(menu, null, '\t')}`;
+	}
+
+	async _addIndecies(item,i){
+		let i = i||this.cfg.menu_tab_offset || 1000;
+		i++;
+		let node = item || this._menu_js.ehw-menu;
+		if(menu.p.a)menu.p.a['@tabindex'] = i;
+		else menu.p['@tabindex'] = i;
+		i++;
+		if(menu?.ul[0]) for await (let item of menu.ul[0].li) {
+			item.a['@tabindex'] = i;
+			i++;
+			this._addIndecies(item);
+		}
+		if(menu?.ul[1]) for await (let item of menu.ul[1].li) {
+			item.a['@tabindex'] = i;
+			i++;
+		}
 	}
 
 	async _applyTemplates(){
