@@ -426,13 +426,13 @@ export class BuildFiles {
 		if(node.p.a)node.p.a['@tabindex'] = i;
 		else node.p['@tabindex'] = i;
 		i++;
-		if(node?.ul[0]) for await (let item of node.ul[0].li) {
+		if(node.ul && node.ul[0]) for await (let item of node.ul[0].li) {
 			// console.log(item);
 			// item['@tabindex'] = i;
 			// i++;
 			this._addIndecies(item);
 		}
-		if(node?.ul[1]) for await (let item of node.ul[1].li) {
+		if(node.ul && node.ul[1]) for await (let item of node.ul[1].li) {
 			item.a['@tabindex'] = i;
 			i++;
 		}
