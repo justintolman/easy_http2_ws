@@ -42,11 +42,11 @@ export class BuildFiles {
 		}
 		if(cfg.navmenu || cfg.template_dir) this._templates = {};
 		if(cfg.navmenu) {
-			this._link_count = 0;
+			this._link_count = 1;
 			this._menu_js = {
 				'ehw-menu': {
 					'@name': 'ehw-menu-root',
-					p:'home',
+					p:{a:{ '#':'home', href:'/', '@tabindex': this._link_count + this.cfg.menu_links.length}},
 					'@tabindex': '-1',
 				}
 			}
@@ -251,6 +251,7 @@ export class BuildFiles {
 			if(nav){
 				if(!node.nav.ul) node.nav.ul = [];
 				this._link_count++;
+				console.log('link count', this._link_count);
 				node.nav.ul[1] = {'li': [{'a': {'@href': r_data.route, '#': file.replace('.html',''), '@tabindex':this._link_count+this.cfg.menu_tab_offset||1000}}], '@class': 'files'};
 			}
 			// if(nav) {
@@ -329,7 +330,8 @@ export class BuildFiles {
 					directories.push(file);
 					if(nav) {
 						if(!current_nav.ul) current_nav.ul = [];
-						let next_nav = {'@name': 'ehw-'+file, p: {'#': file, '@tabindex': -1}};
+						this._link_count++;
+						let next_nav = {'@name': 'ehw-'+file, p: {'#': file, '@tabindex': this._link_count + this.cfg.menu_links.length}}};
 						data.nav = next_nav;
 						if(current_nav.ul[0]) current_nav.ul[0].li.push(next_nav);
 						else current_nav.ul[0] = {li:[next_nav], '@class': 'folders'};
