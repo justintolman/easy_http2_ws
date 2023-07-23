@@ -47,7 +47,8 @@ export class BuildFiles {
 			this._menu_js = {
 				'ehw-menu': {
 					'@name': 'ehw-menu-root',
-					p:{a:{ '#':'home', '@href':'/', '@tabindex': this._link_count_link_count}},
+					// p:{a:{ '#':'home', '@href':'/', '@tabindex': this._link_count_link_count}},
+					p:'home',
 					'@tabindex': '-1',
 				}
 			}
