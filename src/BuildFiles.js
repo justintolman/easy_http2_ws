@@ -42,12 +42,12 @@ export class BuildFiles {
 		}
 		if(cfg.navmenu || cfg.template_dir) this._templates = {};
 		if(cfg.navmenu) {
+			this._link_count = 0;
 			this._menu_js = {
 				'ehw-menu': {
 					'@name': 'ehw-menu-root',
 					p:'home',
 					'@tabindex': '-1',
-					'@data-link-count':"0"
 				}
 			}
 		}
@@ -250,8 +250,8 @@ export class BuildFiles {
 			node.files.push(file);
 			if(nav){
 				if(!node.nav.ul) node.nav.ul = [];
-				this._menu_js['@data-link-count'] = this._menu_js['@data-link-count']++;
-				node.nav.ul[1] = {'li': [{'a': {'@href': r_data.route, '#': file.replace('.html',''), '@tabindex':this._menu_js['@data-link-count']+this.cfg.menu_tab_offset||1000}}], '@class': 'files'};
+				this._link_count++;
+				node.nav.ul[1] = {'li': [{'a': {'@href': r_data.route, '#': file.replace('.html',''), '@tabindex':this._link_count+this.cfg.menu_tab_offset||1000}}], '@class': 'files'};
 			}
 			// if(nav) {
 			// 	if(!current_nav.div) current_nav.div = [];
@@ -343,29 +343,29 @@ export class BuildFiles {
 							let ref = current_nav.p['#']||current_nav.p;
 							if(cfg.drop_index) {
 								if(ref){
-									this._menu_js['@data-link-count'] = this._menu_js['@data-link-count']++;
-									current_nav.p = {'a': {'@href': route + '/', '#': ref, '@tabindex':this._menu_js['@data-link-count']+this.cfg.menu_tab_offset||1000}};
+									this._link_count++;
+									current_nav.p = {'a': {'@href': route + '/', '#': ref, '@tabindex':this._link_count+this.cfg.menu_tab_offset||1000}};
 								}
 							} else {
 								if(!current_nav.ul) current_nav.ul = [];
 								if(current_nav.ul[1]){
-									this._menu_js['@data-link-count'] = this._menu_js['@data-link-count']++;
-									current_nav.ul[1].li.push({'a': {'@href': route.slice(0,-idx.length), '#': ref, '@tabindex':this._menu_js['@data-link-count']+this.cfg.menu_tab_offset||1000}});
+									this._link_count++;
+									current_nav.ul[1].li.push({'a': {'@href': route.slice(0,-idx.length), '#': ref, '@tabindex':this._link_count+this.cfg.menu_tab_offset||1000}});
 								}
 								else {
-									this._menu_js['@data-link-count'] = this._menu_js['@data-link-count']++;
-									current_nav.ul[1] = {li:[{'a': {'@href': route, '#': name, '@tabindex':this._menu_js['@data-link-count']+this.cfg.menu_tab_offset||1000}}], '@class': 'files'}
+									this._link_count++;
+									current_nav.ul[1] = {li:[{'a': {'@href': route, '#': name, '@tabindex':this._link_count+this.cfg.menu_tab_offset||1000}}], '@class': 'files'}
 								}
 							}
 						} else {
 							if(!current_nav.ul) current_nav.ul = [];
 							if(current_nav.ul[1]){
-								this._menu_js['@data-link-count'] = this._menu_js['@data-link-count']++;
-								current_nav.ul[1].li.push({'a': {'@href': route, '#': name, '@tabindex':this._menu_js['@data-link-count']+this.cfg.menu_tab_offset||1000}});
+								this._link_count++;
+								current_nav.ul[1].li.push({'a': {'@href': route, '#': name, '@tabindex':this._link_count+this.cfg.menu_tab_offset||1000}});
 							}
 							else {
-								this._menu_js['@data-link-count'] = this._menu_js['@data-link-count']++;
-								current_nav.ul[1] = {li:[{'a': {'@href': route, '#': name, '@tabindex':this._menu_js['@data-link-count']+this.cfg.menu_tab_offset||1000}}], '@class': 'files'}
+								this._link_count++;
+								current_nav.ul[1] = {li:[{'a': {'@href': route, '#': name, '@tabindex':this._link_count+this.cfg.menu_tab_offset||1000}}], '@class': 'files'}
 							}
 						}
 					}
