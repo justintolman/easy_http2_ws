@@ -49,7 +49,7 @@ export class BuildFiles {
 					'@name': 'ehw-menu-root',
 					// p:{a:{ '#':'home', '@href':'/', '@tabindex': this._link_count_link_count}},
 					p:'home',
-					'@tabindex': '-1',
+					'@tabindex': this._link_count_link_count,
 				}
 			}
 		}
@@ -225,7 +225,8 @@ export class BuildFiles {
 					let existing = await node.nav.ul[0].li.find(i => i['@name'] === 'ehw-'+r);
 					if(existing)next.nav = existing;
 					else {
-						next.nav = {'@name':(r==='/')?'ehw-home':'ehw-'+r, p:{'#':r}};
+						this._link_count++;
+						next.nav = {'@name':(r==='/')?'ehw-home':'ehw-'+r, p:{'#':r, '@tabindex':this._link_count}};
 						node.nav.ul[0].li.push(next.nav);
 					}
 				}
