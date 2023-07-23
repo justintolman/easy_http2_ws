@@ -480,7 +480,7 @@ Additional arbitrary links can be added to with menu_links in config.js. unse th
 		...
 	}
 
-Here an example of the css for a dropdown menu. (I'd reccomend a WebComponent for a more advanced menu, wisth something like this as a fallback for users with JavaScript turned off.)
+Here an example of the css for a dropdown menu. (Note that useng display:none; like this can interfere with tab navigation, so the older trick of moving the dropdown out of view is probably a better option. In addition, I'd reccomend using a WebComponent for a more advanced menu, with something like this as a fallback for users with JavaScript turned off.)
 
 	/* Set the nav postition */
 	nav {
