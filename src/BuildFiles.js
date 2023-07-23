@@ -434,7 +434,7 @@ export class BuildFiles {
 			// console.log(item);
 			// item['@tabindex'] = i;
 			// i++;
-			this._addIndecies(item);
+			this._addIndecies(item, i);
 		}
 	}
 
