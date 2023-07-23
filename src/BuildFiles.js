@@ -420,18 +420,18 @@ export class BuildFiles {
 	}
 
 	async _addIndecies(item,i){
-		let i = i||this.cfg.menu_tab_offset || 1000;
+		i = i||this.cfg.menu_tab_offset || 1000;
 		i++;
 		let node = item || this._menu_js.ehw-menu;
-		if(menu.p.a)menu.p.a['@tabindex'] = i;
-		else menu.p['@tabindex'] = i;
+		if(node.p.a)node.p.a['@tabindex'] = i;
+		else node.p['@tabindex'] = i;
 		i++;
-		if(menu?.ul[0]) for await (let item of menu.ul[0].li) {
+		if(node?.ul[0]) for await (let item of node.ul[0].li) {
 			item.a['@tabindex'] = i;
 			i++;
 			this._addIndecies(item);
 		}
-		if(menu?.ul[1]) for await (let item of menu.ul[1].li) {
+		if(node?.ul[1]) for await (let item of node.ul[1].li) {
 			item.a['@tabindex'] = i;
 			i++;
 		}
