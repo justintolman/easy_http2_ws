@@ -331,7 +331,7 @@ export class BuildFiles {
 					if(nav) {
 						if(!current_nav.ul) current_nav.ul = [];
 						this._link_count++;
-						let next_nav = {'@name': 'ehw-'+file, p: {'#': file, '@tabindex': this._link_count + this.cfg.menu_links.length}}};
+						let next_nav = {'@name': 'ehw-'+file, p: {'#': file, '@tabindex': this._link_count + this.cfg.menu_links.length}};
 						data.nav = next_nav;
 						if(current_nav.ul[0]) current_nav.ul[0].li.push(next_nav);
 						else current_nav.ul[0] = {li:[next_nav], '@class': 'folders'};
