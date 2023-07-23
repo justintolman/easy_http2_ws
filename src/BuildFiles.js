@@ -422,7 +422,7 @@ export class BuildFiles {
 	async _addIndecies(item,i){
 		i = i||this.cfg.menu_tab_offset || 1000;
 		i++;
-		let node = item || this._menu_js.ehw-menu;
+		let node = item || this._menu_js['ehw-menu'];
 		if(node.p.a)node.p.a['@tabindex'] = i;
 		else node.p['@tabindex'] = i;
 		i++;
