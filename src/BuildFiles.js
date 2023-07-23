@@ -331,6 +331,7 @@ export class BuildFiles {
 					if(nav) {
 						if(!current_nav.ul) current_nav.ul = [];
 						this._link_count++;
+						console.log('link count', this._link_count);
 						let next_nav = {'@name': 'ehw-'+file, p: {'#': file, '@tabindex': this._link_count + this.cfg.menu_links.length}};
 						data.nav = next_nav;
 						if(current_nav.ul[0]) current_nav.ul[0].li.push(next_nav);
@@ -346,16 +347,19 @@ export class BuildFiles {
 							if(cfg.drop_index) {
 								if(ref){
 									this._link_count++;
+									console.log('link count', this._link_count);
 									current_nav.p = {'a': {'@href': route + '/', '#': ref, '@tabindex':this._link_count+this.cfg.menu_tab_offset||1000}};
 								}
 							} else {
 								if(!current_nav.ul) current_nav.ul = [];
 								if(current_nav.ul[1]){
 									this._link_count++;
+									console.log('link count', this._link_count);
 									current_nav.ul[1].li.push({'a': {'@href': route.slice(0,-idx.length), '#': ref, '@tabindex':this._link_count+this.cfg.menu_tab_offset||1000}});
 								}
 								else {
 									this._link_count++;
+									console.log('link count', this._link_count);
 									current_nav.ul[1] = {li:[{'a': {'@href': route, '#': name, '@tabindex':this._link_count+this.cfg.menu_tab_offset||1000}}], '@class': 'files'}
 								}
 							}
@@ -363,10 +367,12 @@ export class BuildFiles {
 							if(!current_nav.ul) current_nav.ul = [];
 							if(current_nav.ul[1]){
 								this._link_count++;
+								console.log('link count', this._link_count);
 								current_nav.ul[1].li.push({'a': {'@href': route, '#': name, '@tabindex':this._link_count+this.cfg.menu_tab_offset||1000}});
 							}
 							else {
 								this._link_count++;
+								console.log('link count', this._link_count);
 								current_nav.ul[1] = {li:[{'a': {'@href': route, '#': name, '@tabindex':this._link_count+this.cfg.menu_tab_offset||1000}}], '@class': 'files'}
 							}
 						}
