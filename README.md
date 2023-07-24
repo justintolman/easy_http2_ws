@@ -630,9 +630,25 @@ Here an example of the css for a dropdown menu. (I'd reccomend a WebComponent fo
 	ehw-menu ul p:hover ~ ul,
 	ehw-menu li:hover > ul,
 	ehw-menu > p:hover ~ ul.files,
-	ehw-menu > ul.files:hover {
+	ehw-menu > ul.files:hover,
+
+	ehw-menu ul.files:focus-within > li,
+	ehw-menu ul p:focus-within ~ ul,
+	ehw-menu li:focus-within  > ul,
+	ehw-menu > p:focus-within  ~ ul.files,
+	ehw-menu > ul.files:focus-within  {
 		display: flex;
 		flex-direction: column;
+	}
+
+	ehw-menu > ul.files {
+		transform: translateX(-100vw);
+		display: flex;
+		flex-direction: column;
+	}
+
+	ehw-menu p:focus-within ~ ul.files, ehw-menu ul.files:focus-within {
+		transform: translateX(0);
 	}
 	ehw-menu ul {
 		display: none;
