@@ -44,7 +44,7 @@ export class BuildFiles {
 			this._menu_js = {
 				'ehw-menu': {
 					'@name': 'ehw-menu-root',
-					p: {a:{'#':'home'}}
+					p: {'#':'home'}
 				}
 			}
 		}
@@ -419,22 +419,18 @@ export class BuildFiles {
 		}
 	}
 
-	async _addIndecies(item,i){
-		i = i||this.cfg.menu_tab_offset || 1000;
-		i++;
+	async _addIndecies(item){
+		this._tab_idx = this._tab_idx||this.cfg.menu_tab_offset || 1000;
 		let node = item || this._menu_js['ehw-menu'];
-		if(node.p.a)node.p.a['@tabindex'] = i;
-		else node.p['@tabindex'] = i;
-		i++;
+		if(node.p.a)node.p.a['@tabindex'] = this._tab_idx;
+		else node.p['@tabindex'] = this._tab_idx;
+		this._tab_idx++;
 		if(node.ul && node.ul[0]) for await (let item of node.ul[0].li) {
-			// console.log(item);
-			// item['@tabindex'] = i;
-			// i++;
-			this._addIndecies(item, i);
+			await this._addIndecies(item);
 		}
 		if(node.ul && node.ul[1]) for await (let item of node.ul[1].li) {
-			item.a['@tabindex'] = i;
-			i++;
+			item.a['@tabindex'] = this._tab_idx;
+			this._tab_idx++;
 		}
 	}
 
