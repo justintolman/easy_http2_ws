@@ -420,18 +420,23 @@ export class BuildFiles {
 	}
 
 	async _addIndecies(item){
+		let isroot = !this._tab_idx;
 		this._tab_idx = this._tab_idx||this.cfg.menu_tab_offset || 1000;
 		let node = item || this._menu_js['ehw-menu'];
 		if(node.p.a)node.p.a['@tabindex'] = this._tab_idx;
 		else node.p['@tabindex'] = this._tab_idx;
 		this._tab_idx++;
-		if(node.ul && node.ul[0]) for await (let item of node.ul[0].li) {
-			await this._addIndecies(item);
-		}
-		if(node.ul && node.ul[1]) for await (let item of node.ul[1].li) {
+		if(isroot && node.ul && node.ul[1]) for await (let item of node.ul[1].li) {
 			item.a['@tabindex'] = this._tab_idx;
 			this._tab_idx++;
 		}
+		if(node.ul && node.ul[0]) for await (let item of node.ul[0].li) {
+			await this._addIndecies(item);
+		}
+		// if(isroot &&node.ul && node.ul[1]) for await (let item of node.ul[1].li) {
+		// 	item.a['@tabindex'] = this._tab_idx;
+		// 	this._tab_idx++;
+		// }
 	}
 
 	async _applyTemplates(){
