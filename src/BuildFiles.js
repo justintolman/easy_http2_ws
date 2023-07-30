@@ -293,7 +293,17 @@ export class BuildFiles {
 				let stats = await fs.stat(f_path);
 				let isDir = stats.isDirectory();
 				let route = `${r_data.route}/${file}`.replace('//','/');
-				let name = file.split('.')[0];
+				let f_parts = file.split('.');
+				let name = f_parts[0];
+				if(file === idx){
+					let r_parts = route.split('/');
+					if(!r_parts[r_parts.length - 2]) name, 'home';
+					else name = r_parts[r_parts.length - 2];
+					console.log('name', name);
+				}
+				let ext = f_parts[f_parts.length - 1];
+				console.log('ext', ext,ext !== 'html');
+				if(ext !== 'html') name = `${name} (${ext.toUpperCase()})`;
 				let relative = `${r_data.relative}/${file}`.replace('//','/');
 				let branched = false;
 				let data = {
