@@ -299,10 +299,8 @@ export class BuildFiles {
 					let r_parts = route.split('/');
 					if(!r_parts[r_parts.length - 2]) name, 'home';
 					else name = r_parts[r_parts.length - 2];
-					console.log('name', name);
 				}
 				let ext = f_parts[f_parts.length - 1];
-				console.log('ext', ext,ext !== 'html');
 				if(ext !== 'html') name = `${name} (${ext.toUpperCase()})`;
 				let relative = `${r_data.relative}/${file}`.replace('//','/');
 				let branched = false;
