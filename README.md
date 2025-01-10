@@ -1,3 +1,5 @@
+> I'm abandoning this and will be using xyproto/algernon instead, because it has most of the features I was building here plus QUIC and HTTP/3 support.
+
 # easy-http2-ws
 An easy http/2 server with automatic http/2 push intended for quick deployment of small sites with minimal setup e.g. a solo developer's personal website/portfolio for building WebComponents.
 
